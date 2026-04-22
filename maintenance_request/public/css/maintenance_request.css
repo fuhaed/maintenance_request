@@ -1,0 +1,88 @@
+/* Status Colors */
+[data-doctype="Maintenance Request"] .indicator-pill.orange {
+    background-color: #ff9800 !important;
+}
+
+[data-doctype="Maintenance Request"] .indicator-pill.blue {
+    background-color: #2196f3 !important;
+}
+
+[data-doctype="Maintenance Request"] .indicator-pill.green {
+    background-color: #4caf50 !important;
+}
+
+[data-doctype="Maintenance Request"] .indicator-pill.red {
+    background-color: #f44336 !important;
+}
+
+[data-doctype="Maintenance Request"] .indicator-pill.purple {
+    background-color: #9c27b0 !important;
+}
+
+/* Section Styling */
+[data-doctype="Maintenance Request"] .section-head {
+    background-color: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--primary);
+}
+
+/* Form Container */
+[data-doctype="Maintenance Request"] .form-layout {
+    max-width: 100%;
+}
+
+/* Input Fields */
+[data-doctype="Maintenance Request"] .form-control {
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.2s ease;
+}
+
+[data-doctype="Maintenance Request"] .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+}
+
+/* Required Field Labels */
+[data-doctype="Maintenance Request"] .reqd .clearfix label {
+    font-weight: 600;
+}
+
+/* Tab Styling */
+[data-doctype="Maintenance Request"] .form-tabs .nav-link {
+    font-weight: 500;
+    padding: 12px 20px;
+}
+
+[data-doctype="Maintenance Request"] .form-tabs .nav-link.active {
+    border-bottom: 3px solid var(--primary);
+}
+
+/* Table Styling */
+[data-doctype="Maintenance Request"] .frappe-control[data-fieldname="services"] .grid-body {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Totals Section */
+[data-doctype="Maintenance Request"] [data-fieldname="total_amount"] .control-value,
+[data-doctype="Maintenance Request"] [data-fieldname="outstanding_amount"] .control-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+/* Button Styling */
+[data-doctype="Maintenance Request"] .btn-primary-dark {
+    background-color: var(--primary);
+    border-radius: 6px;
+    padding: 8px 16px;
+}
+
+/* Status Field Special Styling */
+[data-doctype="Maintenance Request"] [data-fieldname="status"] select {
+    font-weight: 600;
+    padding: 8px 12px;
+}

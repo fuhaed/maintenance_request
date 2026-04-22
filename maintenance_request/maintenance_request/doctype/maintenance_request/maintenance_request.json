@@ -1,0 +1,479 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2025-01-29 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "main_info_tab",
+  "request_info_section",
+  "naming_series",
+  "status",
+  "expected_delivery_date",
+  "column_break_req1",
+  "received_date",
+  "branch",
+  "company",
+  "customer_section",
+  "customer",
+  "phone_number",
+  "intake_receiver",
+  "column_break_customer",
+  "customer_name",
+  "secondary_phone",
+  "device_section",
+  "device_type",
+  "brand",
+  "model",
+  "column_break_device",
+  "serial_number",
+  "device_condition",
+  "problem_section",
+  "problem_description",
+  "services_tab",
+  "services_section",
+  "services",
+  "totals_section",
+  "estimated_cost",
+  "total_amount",
+  "column_break_totals",
+  "advance_paid",
+  "outstanding_amount",
+  "repair_tab",
+  "diagnosis_section",
+  "technician",
+  "inspection_decision",
+  "column_break_diag",
+  "not_repairable_reason",
+  "diagnosis",
+  "repair_notes",
+  "delivery_section",
+  "actual_delivery_date",
+  "delivery_receiver",
+  "warranty_section",
+  "warranty_days",
+  "column_break_warranty",
+  "warranty_end_date",
+  "warranty_terms",
+  "invoice_section",
+  "sales_invoice",
+  "attachments_tab",
+  "attachments_section",
+  "images_before",
+  "column_break_attachments",
+  "images_after"
+ ],
+ "fields": [
+  {
+   "fieldname": "main_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "Main Info"
+  },
+  {
+   "fieldname": "request_info_section",
+   "fieldtype": "Section Break",
+   "label": "Request Information"
+  },
+  {
+   "default": "MR-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "MR-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nIn Progress\nCompleted\nNot Repairable\nReady for Delivery\nDelivered",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_delivery_date",
+   "fieldtype": "Date",
+   "label": "Expected Delivery Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_req1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "received_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Received Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Information"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Customer Name",
+   "read_only": 1,
+   "translatable": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Phone Number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "intake_receiver",
+   "fieldtype": "Data",
+   "label": "Intake Receiver",
+   "reqd": 1,
+   "description": "Person who delivered the device to the workshop"
+  },
+  {
+   "fieldname": "column_break_customer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "secondary_phone",
+   "fieldtype": "Data",
+   "label": "Secondary Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "device_section",
+   "fieldtype": "Section Break",
+   "label": "Device Information"
+  },
+  {
+   "fieldname": "device_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Device Type",
+   "options": "Device Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Select",
+   "label": "Brand",
+   "reqd": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "translatable": 1
+  },
+  {
+   "fieldname": "column_break_device",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Data",
+   "label": "Serial Number"
+  },
+  {
+   "fieldname": "device_condition",
+   "fieldtype": "Small Text",
+   "label": "Device Condition",
+   "translatable": 1
+  },
+  {
+   "fieldname": "problem_section",
+   "fieldtype": "Section Break",
+   "label": "Problem Description"
+  },
+  {
+   "fieldname": "problem_description",
+   "fieldtype": "Text Editor",
+   "label": "Problem Description",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "fieldname": "services_tab",
+   "fieldtype": "Tab Break",
+   "label": "Services & Billing"
+  },
+  {
+   "fieldname": "services_section",
+   "fieldtype": "Section Break",
+   "label": "Services"
+  },
+  {
+   "fieldname": "services",
+   "fieldtype": "Table",
+   "label": "Services",
+   "options": "Maintenance Request Service"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "bold": 1,
+   "default": "0",
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost"
+  },
+  {
+   "bold": 1,
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "advance_paid",
+   "fieldtype": "Currency",
+   "label": "Advance Paid"
+  },
+  {
+   "bold": 1,
+   "fieldname": "outstanding_amount",
+   "fieldtype": "Currency",
+   "label": "Outstanding Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "repair_tab",
+   "fieldtype": "Tab Break",
+   "label": "Repair & Delivery"
+  },
+  {
+   "fieldname": "diagnosis_section",
+   "fieldtype": "Section Break",
+   "label": "Diagnosis & Repair"
+  },
+  {
+   "fieldname": "technician",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Technician",
+   "options": "User"
+  },
+  {
+   "fieldname": "inspection_decision",
+   "fieldtype": "Select",
+   "label": "Inspection Decision",
+   "options": "\nRepairable\nNot Repairable",
+   "description": "Select whether the device can be repaired or not"
+  },
+  {
+   "fieldname": "column_break_diag",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "not_repairable_reason",
+   "fieldtype": "Text Editor",
+   "label": "Not Repairable Reason",
+   "depends_on": "eval:doc.inspection_decision=='Not Repairable'",
+   "mandatory_depends_on": "eval:doc.inspection_decision=='Not Repairable'"
+  },
+  {
+   "fieldname": "diagnosis",
+   "fieldtype": "Text Editor",
+   "label": "Diagnosis",
+   "depends_on": "eval:doc.inspection_decision=='Repairable'",
+   "translatable": 1
+  },
+  {
+   "fieldname": "repair_notes",
+   "fieldtype": "Text Editor",
+   "label": "Repair Notes",
+   "depends_on": "eval:doc.inspection_decision=='Repairable'",
+   "translatable": 1
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "fieldname": "actual_delivery_date",
+   "fieldtype": "Date",
+   "label": "Actual Delivery Date"
+  },
+  {
+   "fieldname": "delivery_receiver",
+   "fieldtype": "Data",
+   "label": "Delivery Receiver",
+   "description": "Person who will collect the device after repair"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "warranty_section",
+   "fieldtype": "Section Break",
+   "label": "Warranty"
+  },
+  {
+   "fieldname": "warranty_days",
+   "fieldtype": "Int",
+   "label": "Warranty Days"
+  },
+  {
+   "fieldname": "column_break_warranty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warranty_end_date",
+   "fieldtype": "Date",
+   "label": "Warranty End Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "warranty_terms",
+   "fieldtype": "Small Text",
+   "label": "Warranty Terms",
+   "translatable": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "invoice_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attachments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Attachments"
+  },
+  {
+   "fieldname": "attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Device Images"
+  },
+  {
+   "fieldname": "images_before",
+   "fieldtype": "Attach Image",
+   "label": "Images Before Repair"
+  },
+  {
+   "fieldname": "column_break_attachments",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "images_after",
+   "fieldtype": "Attach Image",
+   "label": "Images After Repair"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-29 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Maintenance Request",
+ "name": "Maintenance Request",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "orange",
+   "title": "Pending"
+  },
+  {
+   "color": "blue",
+   "title": "In Progress"
+  },
+  {
+   "color": "green",
+   "title": "Completed"
+  },
+  {
+   "color": "red",
+   "title": "Not Repairable"
+  },
+  {
+   "color": "purple",
+   "title": "Ready for Delivery"
+  },
+  {
+   "color": "green",
+   "title": "Delivered"
+  }
+ ],
+ "title_field": "customer_name",
+ "track_changes": 1
+}
