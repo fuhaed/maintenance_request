@@ -2641,80 +2641,81 @@ function render_and_print_thermal_label(d) {
 			<meta charset="UTF-8">
 			<title>${esc(d.name)}</title>
 			<style>
-				@page { size: 50mm 30mm; margin: 0; }
+				@page { size: 50mm 25mm; margin: 0; }
 				* { box-sizing: border-box; margin: 0; padding: 0; }
 				html, body {
 					width: 50mm;
-					height: 30mm;
+					height: 25mm;
 					background: #fff;
 					color: #000;
 					font-family: Arial, Tahoma, sans-serif;
-					font-size: 8pt;
+					font-size: 7.5pt;
 					line-height: 1.15;
 					overflow: hidden;
 				}
 				.sticker {
 					width: 50mm;
-					height: 30mm;
-					padding: 1.5mm 2mm;
+					height: 25mm;
+					padding: 1.2mm 2mm 0.8mm;
 					display: flex;
 					flex-direction: column;
 					justify-content: space-between;
+					box-sizing: border-box;
 				}
 				.header-row {
 					display: flex;
 					justify-content: space-between;
 					align-items: center;
-					border-bottom: 0.3mm solid #000;
-					padding-bottom: 0.8mm;
+					border-bottom: 0.35mm solid #000;
+					padding-bottom: 0.5mm;
 				}
-				.company-name { font-weight: 800; font-size: 7.5pt; }
-				.rec-date { font-size: 7pt; font-family: monospace; }
+				.company-name { font-weight: 800; font-size: 7.5pt; max-width: 30mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+				.rec-date { font-size: 7pt; font-family: monospace; direction: ltr; font-weight: 600; }
 				.main-info {
 					display: flex;
 					flex-direction: column;
-					gap: 0.6mm;
-					margin: 0.8mm 0;
+					gap: 0.4mm;
+					margin: 0.4mm 0;
 				}
 				.cust-row {
 					display: flex;
 					justify-content: space-between;
+					align-items: center;
 					font-weight: 700;
 				}
-				.cust-name { font-size: 8pt; max-width: 28mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-				.cust-phone { font-size: 7.5pt; font-family: monospace; direction: ltr; }
+				.cust-name { font-size: 8pt; font-weight: 800; max-width: 27mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+				.cust-phone { font-size: 8pt; font-weight: 800; font-family: monospace; direction: ltr; }
 				.device-row {
 					font-size: 7.5pt;
 					font-weight: 700;
 					white-space: nowrap;
 					overflow: hidden;
 					text-overflow: ellipsis;
-				}
-				.problem-row {
-					font-size: 6.5pt;
-					color: #222;
-					white-space: nowrap;
-					overflow: hidden;
-					text-overflow: ellipsis;
+					color: #111;
 				}
 				.barcode-container {
 					display: flex;
 					flex-direction: column;
 					align-items: center;
 					justify-content: center;
-					padding-top: 0.5mm;
-					border-top: 0.3mm solid #000;
+					padding-top: 0.4mm;
+					border-top: 0.35mm solid #000;
 				}
-				.barcode-svg {
+				.label-barcode {
 					width: 44mm;
-					height: 7.5mm;
+					height: 6.8mm;
+					display: block;
+					fill: #000;
 				}
 				.req-code {
-					font-size: 7pt;
+					font-size: 7.5pt;
 					font-weight: 800;
 					font-family: monospace;
 					letter-spacing: 0.5px;
 					direction: ltr;
+					text-align: center;
+					line-height: 1;
+					margin-top: 0.2mm;
 				}
 			</style>
 		</head>
@@ -2730,7 +2731,6 @@ function render_and_print_thermal_label(d) {
 						<span class="cust-phone">${esc(d.phone)}</span>
 					</div>
 					<div class="device-row">📱 ${esc(d.device)}</div>
-					<div class="problem-row">⚙️ ${esc(d.problem)}</div>
 				</div>
 				<div class="barcode-container">
 					${barcode_svg}
