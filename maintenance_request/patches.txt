@@ -9,3 +9,4 @@ maintenance_request.patches.migrate_device_brands
 maintenance_request.patches.update_dashboard_roles
 maintenance_request.patches.normalize_legacy_requests
 maintenance_request.patches.fix_existing_customers
+maintenance_request.patches.sync_workspace

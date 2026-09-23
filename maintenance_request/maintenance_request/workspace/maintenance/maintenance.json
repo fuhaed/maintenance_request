@@ -1,0 +1,168 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>الوصول السريع | Quick Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Dashboard\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Request\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Device Brand\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Device Type\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":4}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>البيانات والعمليات | Operations & Master Data</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Maintenance Operations\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Device Masters\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Financials & Customers\",\"col\":4}}]",
+ "creation": "2026-09-23 12:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "service",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Maintenance",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance Operations",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance Dashboard",
+   "link_count": 0,
+   "link_to": "maintenance_dashboard",
+   "link_type": "Page",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance Request",
+   "link_count": 0,
+   "link_to": "Maintenance Request",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Device Masters",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance Device Brand",
+   "link_count": 0,
+   "link_to": "Maintenance Device Brand",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Device Type",
+   "link_count": 0,
+   "link_to": "Device Type",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Financials & Customers",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Customer",
+   "link_count": 0,
+   "link_to": "Customer",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Invoice",
+   "link_count": 0,
+   "link_to": "Sales Invoice",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-23 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Maintenance Request",
+ "name": "Maintenance",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 8.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "label": "Maintenance Dashboard",
+   "link_to": "maintenance_dashboard",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "label": "Maintenance Request",
+   "link_to": "Maintenance Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Maintenance Device Brand",
+   "link_to": "Maintenance Device Brand",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Device Type",
+   "link_to": "Device Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Customer",
+   "link_to": "Customer",
+   "type": "DocType"
+  }
+ ],
+ "title": "Maintenance"
+}

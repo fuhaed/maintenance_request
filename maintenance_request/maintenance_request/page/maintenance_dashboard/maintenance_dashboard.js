@@ -189,6 +189,27 @@ frappe.pages['maintenance-dashboard'].on_page_load = function(wrapper) {
 		load_dashboard(dashboard_page);
 	}, 'refresh');
 
+	// Master Data Quick Action Buttons
+	page.add_inner_button(__('Brands'), () => {
+		show_brands_manager_dialog();
+	}, __('Master Data'));
+
+	page.add_inner_button(__('Device Types'), () => {
+		show_device_types_manager_dialog();
+	}, __('Master Data'));
+
+	page.add_inner_button(__('Quick Add Customer'), () => {
+		show_add_customer_dialog();
+	}, __('Master Data'));
+
+	page.add_inner_button(__('Maintenance Requests'), () => {
+		frappe.set_route('List', 'Maintenance Request');
+	}, __('Quick Navigation'));
+
+	page.add_inner_button(__('Sales Invoices'), () => {
+		frappe.set_route('List', 'Sales Invoice');
+	}, __('Quick Navigation'));
+
 	// Load branches once
 	try {
 		frappe.call({
@@ -1799,19 +1820,24 @@ function load_brands_list(selected_brand) {
 
 // Show dialog to add new brand
 function show_add_brand_dialog() {
-	frappe.prompt(
-		{
-			label: __('Brand Name'),
-			fieldname: 'brand_name',
-			fieldtype: 'Data',
-			reqd: 1
-		},
-		function(values) {
+	var d = new frappe.ui.Dialog({
+		title: __('Add New Brand'),
+		fields: [
+			{
+				label: __('Brand Name'),
+				fieldname: 'brand_name',
+				fieldtype: 'Data',
+				reqd: 1,
+				placeholder: __('e.g. Apple, Samsung, Dell...')
+			}
+		],
+		primary_action_label: __('Add'),
+		primary_action: function(values) {
 			frappe.call({
 				method: 'frappe.client.insert',
 				args: {
 					doc: {
-							doctype: 'Maintenance Device Brand',
+						doctype: 'Maintenance Device Brand',
 						brand_name: values.brand_name
 					}
 				},
@@ -1819,41 +1845,396 @@ function show_add_brand_dialog() {
 				freeze_message: __('Creating Brand...'),
 				callback: function(r) {
 					if (r.message) {
+						d.hide();
 						frappe.show_alert({
 							message: __('Brand "{0}" created successfully', [values.brand_name]),
 							indicator: 'green'
 						});
-						// Reload brands select and set the new value
 						load_brands_list(values.brand_name);
 					}
 				},
-				error: function(r) {
+				error: function() {
 					frappe.msgprint(__('Error creating brand. It may already exist.'));
 				}
 			});
-		},
-		__('Add New Brand'),
-		__('Add')
-	);
+		}
+	});
+	d.show();
+}
+
+// Load device types list as select options
+function load_device_types_list(selected_type) {
+	frappe.call({
+		method: 'frappe.client.get_list',
+		args: { doctype: 'Device Type', limit_page_length: 0, fields: ['name', 'device_name'], order_by: 'name asc' },
+		async: false,
+		callback: function(r) {
+			if (r.message) {
+				let $select = $('#mr_device_type');
+				if ($select.length) {
+					$select.find('option:not(:first)').remove();
+					r.message.forEach(function(item) {
+						let label = item.device_name || item.name;
+						let sel = selected_type && selected_type === item.name ? 'selected' : '';
+						$select.append(`<option value="${esc_attr(item.name)}" ${sel}>${esc(label)}</option>`);
+					});
+					if (selected_type) {
+						$select.val(selected_type);
+					}
+					var $wrapper = $select.next('.searchable-dropdown');
+					if ($wrapper.length && $wrapper.data('sd-update')) {
+						var new_opts = [{value: '', label: __('Select')}];
+						r.message.forEach(function(item) {
+							new_opts.push({value: item.name, label: item.device_name || item.name});
+						});
+						$wrapper.data('sd-update')(new_opts, selected_type || $select.val());
+					}
+				}
+			}
+		}
+	});
+}
+
+// Show comprehensive modal dialog to manage brands (View, Search, Add, Delete)
+function show_brands_manager_dialog() {
+	var d = new frappe.ui.Dialog({
+		title: __('Manage Brands'),
+		size: 'large',
+		fields: [
+			{
+				fieldtype: 'Section Break',
+				label: __('Add Brand')
+			},
+			{
+				fieldname: 'new_brand_name',
+				fieldtype: 'Data',
+				label: __('Brand Name'),
+				placeholder: __('Type brand name and press Add...'),
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('All Brands')
+			},
+			{
+				fieldname: 'search_brand',
+				fieldtype: 'Data',
+				label: __('Search'),
+				placeholder: __('Search brands...'),
+			},
+			{
+				fieldname: 'brands_html',
+				fieldtype: 'HTML',
+			}
+		],
+		primary_action_label: __('+ Add Brand'),
+		primary_action: function(values) {
+			var name = (values.new_brand_name || '').trim();
+			if (!name) {
+				frappe.msgprint(__('Please enter brand name'));
+				return;
+			}
+			frappe.call({
+				method: 'frappe.client.insert',
+				args: {
+					doc: {
+						doctype: 'Maintenance Device Brand',
+						brand_name: name
+					}
+				},
+				freeze: true,
+				freeze_message: __('Creating Brand...'),
+				callback: function(r) {
+					if (r.message) {
+						frappe.show_alert({
+							message: __('Brand "{0}" created successfully', [name]),
+							indicator: 'green'
+						});
+						d.set_value('new_brand_name', '');
+						load_brands_list(name);
+						render_brands_table();
+					}
+				},
+				error: function() {
+					frappe.msgprint(__('Error creating brand. It may already exist.'));
+				}
+			});
+		}
+	});
+
+	function render_brands_table() {
+		var filter = (d.get_value('search_brand') || '').toLowerCase().trim();
+		frappe.call({
+			method: 'frappe.client.get_list',
+			args: {
+				doctype: 'Maintenance Device Brand',
+				fields: ['name', 'brand_name', 'creation'],
+				limit_page_length: 0,
+				order_by: 'creation desc'
+			},
+			callback: function(r) {
+				var items = (r && r.message) || [];
+				if (filter) {
+					items = items.filter(function(item) {
+						return (item.brand_name || item.name).toLowerCase().indexOf(filter) >= 0;
+					});
+				}
+				var html = `
+					<div style="max-height:360px;overflow-y:auto;border:1px solid #cbd5e1;border-radius:6px;margin-top:10px;">
+						<table class="table table-bordered table-sm table-hover m-0" style="font-size:12px;width:100%;">
+							<thead style="background:#f1f5f9;position:sticky;top:0;z-index:2;">
+								<tr>
+									<th style="width:40px;text-align:center;">#</th>
+									<th>${__('Brand Name')}</th>
+									<th style="width:140px;">${__('Date')}</th>
+									<th style="width:80px;text-align:center;">${__('Actions')}</th>
+								</tr>
+							</thead>
+							<tbody>
+				`;
+				if (items.length === 0) {
+					html += `<tr><td colspan="4" class="text-center text-muted p-3">${__('No brands found')}</td></tr>`;
+				} else {
+					items.forEach(function(item, idx) {
+						var date_str = item.creation ? frappe.datetime.str_to_user(item.creation.split(' ')[0]) : '';
+						html += `
+							<tr>
+								<td style="text-align:center;color:#64748b;">${idx + 1}</td>
+								<td style="font-weight:600;color:#0f172a;">${frappe.utils.escape_html(item.brand_name || item.name)}</td>
+								<td style="color:#64748b;font-size:11px;">${date_str}</td>
+								<td style="text-align:center;">
+									<button type="button" class="btn btn-xs btn-outline-danger delete-brand-btn" data-name="${frappe.utils.escape_html(item.name)}" title="${__('Delete')}" style="padding:2px 6px;border-radius:4px;">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+									</button>
+								</td>
+							</tr>
+						`;
+					});
+				}
+				html += `</tbody></table></div>`;
+				d.fields_dict.brands_html.$wrapper.html(html);
+
+				d.fields_dict.brands_html.$wrapper.find('.delete-brand-btn').on('click', function(e) {
+					e.stopPropagation();
+					var bname = $(this).data('name');
+					frappe.confirm(__('Are you sure you want to delete brand "{0}"?', [bname]), function() {
+						frappe.call({
+							method: 'frappe.client.delete',
+							args: {
+								doctype: 'Maintenance Device Brand',
+								name: bname
+							},
+							callback: function() {
+								frappe.show_alert({
+									message: __('Brand "{0}" deleted successfully', [bname]),
+									indicator: 'green'
+								});
+								load_brands_list();
+								render_brands_table();
+							}
+						});
+					});
+				});
+			}
+		});
+	}
+
+	d.show();
+	render_brands_table();
+
+	d.fields_dict.search_brand.$input.on('input', function() {
+		render_brands_table();
+	});
+
+	d.fields_dict.new_brand_name.$input.on('keypress', function(e) {
+		if (e.which === 13) {
+			d.get_primary_btn().click();
+		}
+	});
+}
+
+// Show comprehensive modal dialog to manage device types (View, Search, Add, Delete)
+function show_device_types_manager_dialog() {
+	var d = new frappe.ui.Dialog({
+		title: __('Manage Device Types'),
+		size: 'large',
+		fields: [
+			{
+				fieldtype: 'Section Break',
+				label: __('Add Device Type')
+			},
+			{
+				fieldname: 'new_device_name',
+				fieldtype: 'Data',
+				label: __('Device Name'),
+				placeholder: __('e.g. Laptop, iPhone, Tablet...'),
+			},
+			{
+				fieldname: 'new_description',
+				fieldtype: 'Data',
+				label: __('Description'),
+				placeholder: __('Optional description...'),
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('All Device Types')
+			},
+			{
+				fieldname: 'search_device_type',
+				fieldtype: 'Data',
+				label: __('Search'),
+				placeholder: __('Search device types...'),
+			},
+			{
+				fieldname: 'device_types_html',
+				fieldtype: 'HTML',
+			}
+		],
+		primary_action_label: __('+ Add Device Type'),
+		primary_action: function(values) {
+			var name = (values.new_device_name || '').trim();
+			if (!name) {
+				frappe.msgprint(__('Please enter device name'));
+				return;
+			}
+			frappe.call({
+				method: 'frappe.client.insert',
+				args: {
+					doc: {
+						doctype: 'Device Type',
+						device_name: name,
+						description: values.new_description || ''
+					}
+				},
+				freeze: true,
+				freeze_message: __('Creating Device Type...'),
+				callback: function(r) {
+					if (r.message) {
+						frappe.show_alert({
+							message: __('Device Type "{0}" created successfully', [name]),
+							indicator: 'green'
+						});
+						d.set_value('new_device_name', '');
+						d.set_value('new_description', '');
+						load_device_types_list(name);
+						render_device_types_table();
+					}
+				},
+				error: function() {
+					frappe.msgprint(__('Error creating device type. It may already exist.'));
+				}
+			});
+		}
+	});
+
+	function render_device_types_table() {
+		var filter = (d.get_value('search_device_type') || '').toLowerCase().trim();
+		frappe.call({
+			method: 'frappe.client.get_list',
+			args: {
+				doctype: 'Device Type',
+				fields: ['name', 'device_name', 'description', 'creation'],
+				limit_page_length: 0,
+				order_by: 'creation desc'
+			},
+			callback: function(r) {
+				var items = (r && r.message) || [];
+				if (filter) {
+					items = items.filter(function(item) {
+						var txt = ((item.device_name || item.name) + ' ' + (item.description || '')).toLowerCase();
+						return txt.indexOf(filter) >= 0;
+					});
+				}
+				var html = `
+					<div style="max-height:360px;overflow-y:auto;border:1px solid #cbd5e1;border-radius:6px;margin-top:10px;">
+						<table class="table table-bordered table-sm table-hover m-0" style="font-size:12px;width:100%;">
+							<thead style="background:#f1f5f9;position:sticky;top:0;z-index:2;">
+								<tr>
+									<th style="width:40px;text-align:center;">#</th>
+									<th>${__('Device Type')}</th>
+									<th>${__('Description')}</th>
+									<th style="width:140px;">${__('Date')}</th>
+									<th style="width:80px;text-align:center;">${__('Actions')}</th>
+								</tr>
+							</thead>
+							<tbody>
+				`;
+				if (items.length === 0) {
+					html += `<tr><td colspan="5" class="text-center text-muted p-3">${__('No device types found')}</td></tr>`;
+				} else {
+					items.forEach(function(item, idx) {
+						var date_str = item.creation ? frappe.datetime.str_to_user(item.creation.split(' ')[0]) : '';
+						html += `
+							<tr>
+								<td style="text-align:center;color:#64748b;">${idx + 1}</td>
+								<td style="font-weight:600;color:#0f172a;">${frappe.utils.escape_html(item.device_name || item.name)}</td>
+								<td style="color:#475569;">${frappe.utils.escape_html(item.description || '')}</td>
+								<td style="color:#64748b;font-size:11px;">${date_str}</td>
+								<td style="text-align:center;">
+									<button type="button" class="btn btn-xs btn-outline-danger delete-device-type-btn" data-name="${frappe.utils.escape_html(item.name)}" title="${__('Delete')}" style="padding:2px 6px;border-radius:4px;">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+									</button>
+								</td>
+							</tr>
+						`;
+					});
+				}
+				html += `</tbody></table></div>`;
+				d.fields_dict.device_types_html.$wrapper.html(html);
+
+				d.fields_dict.device_types_html.$wrapper.find('.delete-device-type-btn').on('click', function(e) {
+					e.stopPropagation();
+					var dtname = $(this).data('name');
+					frappe.confirm(__('Are you sure you want to delete device type "{0}"?', [dtname]), function() {
+						frappe.call({
+							method: 'frappe.client.delete',
+							args: {
+								doctype: 'Device Type',
+								name: dtname
+							},
+							callback: function() {
+								frappe.show_alert({
+									message: __('Device Type "{0}" deleted successfully', [dtname]),
+									indicator: 'green'
+								});
+								load_device_types_list();
+								render_device_types_table();
+							}
+						});
+					});
+				});
+			}
+		});
+	}
+
+	d.show();
+	render_device_types_table();
+
+	d.fields_dict.search_device_type.$input.on('input', function() {
+		render_device_types_table();
+	});
 }
 
 // Show dialog to add new device type
 function show_add_device_type_dialog() {
-	frappe.prompt(
-		[
+	var d = new frappe.ui.Dialog({
+		title: __('Add New Device Type'),
+		fields: [
 			{
 				label: __('Device Name'),
 				fieldname: 'device_name',
 				fieldtype: 'Data',
-				reqd: 1
+				reqd: 1,
+				placeholder: __('e.g. Mobile, Laptop, Tablet...')
 			},
 			{
 				label: __('Description'),
 				fieldname: 'description',
-				fieldtype: 'Small Text'
+				fieldtype: 'Small Text',
+				placeholder: __('Optional description...')
 			}
 		],
-		function(values) {
+		primary_action_label: __('Add'),
+		primary_action: function(values) {
 			frappe.call({
 				method: 'frappe.client.insert',
 				args: {
@@ -1867,36 +2248,34 @@ function show_add_device_type_dialog() {
 				freeze_message: __('Creating Device Type...'),
 				callback: function(r) {
 					if (r.message) {
+						d.hide();
 						frappe.show_alert({
 							message: __('Device Type "{0}" created successfully', [values.device_name]),
 							indicator: 'green'
 						});
-						// Add new option to select and set it
-							$('#mr_device_type').append(
-								`<option value="${esc_attr(r.message.name)}" selected>${esc(r.message.name)}</option>`
-							);
-						$('#mr_device_type').val(r.message.name);
+						load_device_types_list(values.device_name);
 					}
 				},
 				error: function() {
 					frappe.msgprint(__('Error creating device type. It may already exist.'));
 				}
 			});
-		},
-		__('Add New Device Type'),
-		__('Add')
-	);
+		}
+	});
+	d.show();
 }
 
 // Show dialog to add new customer
 function show_add_customer_dialog() {
-	frappe.prompt(
-		[
+	var d = new frappe.ui.Dialog({
+		title: __('Add New Customer'),
+		fields: [
 			{
 				label: __('Customer Name'),
 				fieldname: 'customer_name',
 				fieldtype: 'Data',
-				reqd: 1
+				reqd: 1,
+				placeholder: __('Customer Full Name')
 			},
 			{
 				label: __('Customer Type'),
@@ -1910,10 +2289,19 @@ function show_add_customer_dialog() {
 				fieldname: 'phone_number',
 				fieldtype: 'Data',
 				options: 'Phone',
-				reqd: 1
+				reqd: 1,
+				placeholder: __('05XXXXXXXX')
+			},
+			{
+				label: __('Secondary Phone'),
+				fieldname: 'secondary_phone',
+				fieldtype: 'Data',
+				options: 'Phone',
+				placeholder: __('Optional secondary phone')
 			}
 		],
-		function(values) {
+		primary_action_label: __('Add'),
+		primary_action: function(values) {
 			frappe.call({
 				method: 'maintenance_request.maintenance_request.doctype.maintenance_request.maintenance_request.create_customer_quick',
 				args: {
@@ -1926,19 +2314,26 @@ function show_add_customer_dialog() {
 				freeze_message: __('Creating Customer...'),
 				callback: function(r) {
 					if (r.message) {
+						d.hide();
 						frappe.show_alert({
 							message: __('Customer "{0}" created successfully', [values.customer_name]),
 							indicator: 'green'
 						});
-						// Add new option to select and set it
 						var display = r.message.customer_name || r.message.name;
-							$('#mr_customer').append(
-								`<option value="${esc_attr(r.message.name)}" selected>${esc(display)}</option>`
-							);
-						$('#mr_customer').val(r.message.name);
-						// Set phone if provided
+						let $select = $('#mr_customer');
+						if ($select.length) {
+							$select.append(`<option value="${esc_attr(r.message.name)}" selected>${esc(display)}</option>`);
+							$select.val(r.message.name);
+							var $wrapper = $select.next('.searchable-dropdown');
+							if ($wrapper.length && $wrapper.data('sd-update')) {
+								load_customer_dropdown_options(r.message.name);
+							}
+						}
 						if (values.phone_number) {
 							$('#mr_phone_number').val(values.phone_number);
+						}
+						if (values.secondary_phone) {
+							$('#mr_secondary_phone').val(values.secondary_phone);
 						}
 					}
 				},
@@ -1946,10 +2341,9 @@ function show_add_customer_dialog() {
 					frappe.msgprint(__('Error creating customer. It may already exist.'));
 				}
 			});
-		},
-		__('Add New Customer'),
-		__('Add')
-	);
+		}
+	});
+	d.show();
 }
 
 function update_totals() {
@@ -2015,20 +2409,7 @@ function update_totals() {
 		}
 	});
 
-	frappe.call({
-		method: 'frappe.client.get_list',
-		args: { doctype: 'Device Type', limit_page_length: 0, fields: ['name'], order_by: 'name asc' },
-		async: false,
-		callback: function(r) {
-			if (r.message) {
-				let $select = $('#mr_device_type');
-				r.message.forEach(function(item) {
-					let selected = data && data.device_type === item.name ? 'selected' : '';
-						$select.append(`<option value="${esc_attr(item.name)}" ${selected}>${esc(item.name)}</option>`);
-				});
-			}
-		}
-	});
+	load_device_types_list(data ? data.device_type : null);
 
 	frappe.call({
 		method: 'frappe.client.get_list',
