@@ -955,134 +955,118 @@ function show_request_dialog(request_name = null) {
 	
 	$('head').append(`
 		<style id="mr-dialog-style">
-			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;animation:mrFadeIn 0.22s cubic-bezier(0.16,1,0.3,1)}
-			@keyframes mrFadeIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}
+			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;animation:mrFadeIn 0.2s cubic-bezier(0.16,1,0.3,1)}
+			@keyframes mrFadeIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
 			.mr-dialog,.mr-dialog input,.mr-dialog select,.mr-dialog textarea{font-variant-numeric:tabular-nums;-webkit-locale:"en-US"}
 			.mr-dialog input[type="date"],.mr-dialog input[type="number"],.mr-dialog .val,.mr-dialog .service-amount{direction:ltr;unicode-bidi:plaintext}
-			.mr-dialog .dialog-box{background:#f8fafc;border-radius:16px;width:96%;max-width:1120px;max-height:92vh;overflow:hidden;box-shadow:0 25px 60px -15px rgba(15,23,42,0.45),0 0 0 1px rgba(255,255,255,0.1);position:relative;border:1px solid #e2e8f0;display:flex;flex-direction:column}
-			.mr-dialog .dialog-header{padding:16px 24px;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.12)}
-			.mr-dialog .dialog-title{color:#fff;font-size:16px;font-weight:800;margin:0;display:flex;align-items:center;gap:12px;letter-spacing:-0.2px}
-			.mr-dialog .dialog-title .badge{background:rgba(255,255,255,0.14);backdrop-filter:blur(6px);padding:4px 12px;border-radius:7px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;letter-spacing:0.5px;border:1px solid rgba(255,255,255,0.22);color:#e0e7ff}
-			.mr-dialog .close-btn{width:32px;height:32px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s cubic-bezier(0.16,1,0.3,1)}
-			.mr-dialog .close-btn:hover{background:rgba(239,68,68,0.9);border-color:rgba(239,68,68,1);transform:rotate(90deg)}
-			.mr-dialog .dialog-body{padding:20px 24px;background:#f8fafc;overflow-y:auto;max-height:calc(92vh - 145px);flex:1}
+			.mr-dialog .dialog-box{background:#f8fafc;border-radius:10px;width:96%;max-width:1120px;max-height:92vh;overflow:hidden;box-shadow:0 20px 40px -10px rgba(15,23,42,0.3);position:relative;border:1px solid #cbd5e1;display:flex;flex-direction:column}
+			.mr-dialog .dialog-header{padding:14px 20px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cbd5e1}
+			.mr-dialog .dialog-title{color:#0f172a;font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px}
+			.mr-dialog .dialog-title .badge{background:#f1f5f9;border:1px solid #cbd5e1;padding:3px 9px;border-radius:4px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:#0f172a}
+			.mr-dialog .close-btn{width:28px;height:28px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;color:#64748b;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease}
+			.mr-dialog .close-btn:hover{background:#0f172a;border-color:#0f172a;color:#ffffff}
+			.mr-dialog .dialog-body{padding:16px 20px;background:#f8fafc;overflow-y:auto;max-height:calc(92vh - 130px);flex:1}
 			.mr-dialog .dialog-body::-webkit-scrollbar{width:6px}
 			.mr-dialog .dialog-body::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px}
 			.mr-dialog .dialog-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
-			.mr-dialog .dialog-body::-webkit-scrollbar-thumb:hover{background:#94a3b8}
-			.mr-dialog .dialog-footer{padding:14px 24px;background:#ffffff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 16px 16px;gap:10px;flex-wrap:wrap}
-			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 16px;background:#ffffff;padding:16px 18px;border-radius:12px;margin-bottom:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
+			.mr-dialog .dialog-footer{padding:12px 20px;background:#ffffff;border-top:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 10px 10px;gap:8px;flex-wrap:wrap}
+			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px;background:#ffffff;padding:14px 16px;border-radius:8px;margin-bottom:12px;border:1px solid #cbd5e1}
 			.mr-dialog .row.cols-3{grid-template-columns:repeat(3,1fr)}
 			.mr-dialog .row.cols-2{grid-template-columns:repeat(2,1fr)}
 			.mr-dialog .field{display:flex;flex-direction:column;position:relative}
 			.mr-dialog .field.full{grid-column:1/-1}
-			.mr-dialog .field label{font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+			.mr-dialog .field label{font-size:11.5px;font-weight:600;color:#334155;margin-bottom:5px;display:flex;align-items:center;gap:4px}
 			.mr-dialog .field label .req{color:#ef4444}
-			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);width:100%;box-sizing:border-box;background:#fff;color:#0f172a}
-			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3.5px rgba(99,102,241,0.15);background:#fff}
-			.mr-dialog .field textarea{min-height:76px;resize:vertical;line-height:1.55}
-			.mr-dialog .btn{padding:8px 14px;border:1px solid transparent;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
-			.mr-dialog .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,23,42,0.1)}
-			.mr-dialog .btn:active{transform:translateY(0)}
-			.mr-dialog .btn-primary{background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-primary:hover{background:linear-gradient(135deg,#4338ca 0%,#4f46e5 100%)}
-			.mr-dialog .btn-secondary{background:#64748b;color:#fff;border-color:transparent}
-			.mr-dialog .btn-secondary:hover{background:#475569}
-			.mr-dialog .btn-success{background:linear-gradient(135deg,#059669 0%,#10b981 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-success:hover{background:linear-gradient(135deg,#047857 0%,#059669 100%)}
-			.mr-dialog .btn-info{background:linear-gradient(135deg,#2563eb 0%,#3b82f6 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-info:hover{background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%)}
-			.mr-dialog .btn-warning{background:linear-gradient(135deg,#d97706 0%,#f59e0b 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-warning:hover{background:linear-gradient(135deg,#b45309 0%,#d97706 100%)}
-			.mr-dialog .btn-danger{background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-danger:hover{background:linear-gradient(135deg,#b91c1c 0%,#dc2626 100%)}
-			.mr-dialog .btn-whatsapp{background:linear-gradient(135deg,#059669 0%,#22c55e 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-whatsapp:hover{background:linear-gradient(135deg,#047857 0%,#16a34a 100%)}
-			.mr-dialog .btn-invoice{background:linear-gradient(135deg,#0f766e 0%,#14b8a6 100%);color:#fff;border-color:transparent}
-			.mr-dialog .btn-invoice:hover{background:linear-gradient(135deg,#115e59 0%,#0f766e 100%)}
-			.mr-dialog .btn-light{background:#f8fafc;color:#475569;border-color:#e2e8f0}
-			.mr-dialog .btn-light:hover{background:#f1f5f9;color:#1e293b;border-color:#cbd5e1}
-			.mr-dialog .btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none}
-			.mr-dialog .btn-sm{padding:5px 11px;font-size:11.5px;min-height:30px}
+			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:7px 10px;border:1px solid #cbd5e1;border-radius:5px;font-size:12.5px;transition:all 0.15s ease;width:100%;box-sizing:border-box;background:#fff;color:#0f172a}
+			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#0f172a;box-shadow:0 0 0 2px rgba(15,23,42,0.08);background:#fff}
+			.mr-dialog .field textarea{min-height:70px;resize:vertical;line-height:1.5}
+			
+			/* Dialog Buttons - Excel / Ghost Icon Style */
+			.mr-dialog .btn-dialog-icon{height:32px;min-width:32px;padding:0 9px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;color:#334155;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;transition:all 0.15s ease;position:relative}
+			.mr-dialog .btn-dialog-icon:hover:not(:disabled){background:#0f172a;border-color:#0f172a;color:#ffffff;transform:translateY(-1px);box-shadow:0 2px 5px rgba(15,23,42,0.15)}
+			.mr-dialog .btn-dialog-icon:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
+			.mr-dialog .btn-dialog-icon svg{width:14px;height:14px;stroke:currentColor}
+			.mr-dialog .btn-dialog-save{background:#0f172a;color:#ffffff;border-color:#0f172a}
+			.mr-dialog .btn-dialog-save:hover{background:#1e293b;border-color:#1e293b}
 			
 			/* Financials KPI Cards */
-			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:14px;padding:16px 18px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
-			.mr-dialog .totals .item{text-align:center;padding:12px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;transition:all 0.2s}
-			.mr-dialog .totals .item:hover{background:#f1f5f9;border-color:#cbd5e1}
-			.mr-dialog .totals .item label{font-size:11px;font-weight:700;color:#64748b;display:block;text-transform:uppercase;margin-bottom:6px;letter-spacing:0.3px}
-			.mr-dialog .totals .item .val{font-size:18px;font-weight:800;color:#312e81}
-			.mr-dialog .totals .item .val.red{color:#dc2626}
-			.mr-dialog .totals .item .val.green{color:#059669}
-			.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #cbd5e1}
+			.mr-dialog .totals .item{text-align:center;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px}
+			.mr-dialog .totals .item label{font-size:11px;font-weight:600;color:#64748b;display:block;text-transform:uppercase;margin-bottom:4px;letter-spacing:0.3px}
+			.mr-dialog .totals .item .val{font-size:16px;font-weight:700;color:#0f172a}
+			.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 			
 			/* Services Table */
-			.mr-dialog .services-section{background:#fff;padding:18px 20px;border-radius:12px;margin-bottom:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
-			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-			.mr-dialog .services-header h4{margin:0;font-size:14.5px;font-weight:800;color:#0f172a}
-			.mr-dialog .services-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
-			.mr-dialog .services-table th{background:#f8fafc;padding:10px 12px;text-align:right;font-weight:800;border-bottom:1.5px solid #e2e8f0;color:#475569}
-			.mr-dialog .services-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-			.mr-dialog .services-table tr:last-child td{border-bottom:none}
-			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:7px 9px;font-size:12px;border:1px solid #d9e0e8;border-radius:6px}
+			.mr-dialog .services-section{background:#fff;padding:14px 16px;border-radius:8px;margin-bottom:12px;border:1px solid #cbd5e1}
+			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+			.mr-dialog .services-header h4{margin:0;font-size:13.5px;font-weight:700;color:#0f172a}
+			.mr-dialog .services-table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden}
+			.mr-dialog .services-table th{background:#f1f5f9;padding:8px 10px;text-align:right;font-weight:700;border:1px solid #cbd5e1;color:#334155}
+			.mr-dialog .services-table td{padding:6px 10px;border:1px solid #e2e8f0;vertical-align:middle}
+			.mr-dialog .services-table tr:nth-child(even){background:#f8fafc}
+			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:5px 8px;font-size:12px;border:1px solid #cbd5e1;border-radius:4px}
 			.mr-dialog .services-table .col-service{width:40%}
 			.mr-dialog .services-table .col-qty{width:15%}
 			.mr-dialog .services-table .col-rate{width:20%}
-			.mr-dialog .services-table .col-amount{width:15%;text-align:center;font-weight:800;color:#4338ca}
+			.mr-dialog .services-table .col-amount{width:15%;text-align:center;font-weight:700;color:#0f172a}
 			.mr-dialog .services-table .col-action{width:10%;text-align:center}
-			.mr-dialog .no-services{text-align:center;padding:18px;color:#94a3b8;font-size:13px}
-			.mr-dialog .delete-service-row{width:28px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:6px}
+			.mr-dialog .no-services{text-align:center;padding:14px;color:#94a3b8;font-size:12.5px}
+			.mr-dialog .delete-service-row{width:26px;height:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;cursor:pointer}
+			.mr-dialog .delete-service-row:hover{background:#0f172a;color:#ffffff;border-color:#0f172a}
 
 			/* Searchable Dropdown */
 			.mr-dialog .searchable-dropdown{position:relative;width:100%;flex:1;min-width:0}
-			.mr-dialog .searchable-dropdown .sd-display{padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:38px;transition:all 0.2s}
-			.mr-dialog .searchable-dropdown .sd-display:hover{border-color:#cbd5e1}
-			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#6366f1;box-shadow:0 0 0 3.5px rgba(99,102,241,0.15)}
+			.mr-dialog .searchable-dropdown .sd-display{padding:7px 10px;border:1px solid #cbd5e1;border-radius:5px;font-size:12.5px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:34px;transition:all 0.15s}
+			.mr-dialog .searchable-dropdown .sd-display:hover{border-color:#94a3b8}
+			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#0f172a;box-shadow:0 0 0 2px rgba(15,23,42,0.08)}
 			.mr-dialog .searchable-dropdown .sd-display .sd-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f172a}
 			.mr-dialog .searchable-dropdown .sd-display .sd-text.placeholder{color:#94a3b8}
-			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,0.15);z-index:3000;display:none;margin-top:4px;max-height:250px;overflow:hidden;flex-direction:column}
+			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 10px 24px rgba(15,23,42,0.12);z-index:3000;display:none;margin-top:4px;max-height:240px;overflow:hidden;flex-direction:column}
 			.mr-dialog .searchable-dropdown .sd-panel.open{display:flex}
-			.mr-dialog .searchable-dropdown .sd-search{padding:8px 10px;border-bottom:1px solid #f1f5f9;background:#f8fafc}
-			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12.5px;outline:none}
-			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:200px}
-			.mr-dialog .searchable-dropdown .sd-option{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f8fafc;transition:background 0.15s}
-			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f5f3ff;color:#4f46e5}
-			.mr-dialog .searchable-dropdown .sd-option.selected{background:#4f46e5;color:#fff}
+			.mr-dialog .searchable-dropdown .sd-search{padding:6px 8px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;outline:none}
+			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:190px}
+			.mr-dialog .searchable-dropdown .sd-option{padding:7px 10px;cursor:pointer;font-size:12.5px;border-bottom:1px solid #f8fafc;transition:background 0.1s}
+			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f1f5f9;color:#0f172a}
+			.mr-dialog .searchable-dropdown .sd-option.selected{background:#0f172a;color:#fff}
 
-			/* Wizard Timeline Tabs */
-			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:14px 20px;margin-bottom:14px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
-			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border-radius:8px;transition:all 0.2s ease;min-width:80px}
-			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f5f3ff}
-			.mr-dialog .wizard-tab-indicator{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;transition:all 0.25s cubic-bezier(0.4,0,0.2,1)}
-			.mr-dialog .wizard-tab-label{font-size:12px;font-weight:700;color:#64748b;white-space:nowrap;transition:color 0.2s ease}
+			/* Wizard Timeline Tabs - Monochrome Spreadsheet Style */
+			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:12px 16px;margin-bottom:12px;background:#ffffff;border-radius:8px;border:1px solid #cbd5e1}
+			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border-radius:6px;transition:all 0.15s ease;min-width:75px}
+			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f8fafc}
+			.mr-dialog .wizard-tab-indicator{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid #cbd5e1;background:#f8fafc;color:#64748b;transition:all 0.15s ease}
+			.mr-dialog .wizard-tab-label{font-size:11.5px;font-weight:600;color:#64748b;white-space:nowrap}
 			.mr-dialog .wizard-tab-check{display:none}
 			.mr-dialog .wizard-tab-icon{display:inline-flex}
-			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#6366f1;background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);color:#ffffff;box-shadow:0 4px 14px rgba(79,70,229,0.35);transform:scale(1.06)}
-			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#4f46e5;font-weight:800}
-			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#10b981;background:linear-gradient(135deg,#059669 0%,#10b981 100%);color:#ffffff;box-shadow:0 4px 12px rgba(16,185,129,0.25)}
-			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#059669}
+			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#0f172a;background:#0f172a;color:#ffffff;box-shadow:0 2px 6px rgba(15,23,42,0.15)}
+			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#0f172a;font-weight:700}
+			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#94a3b8;background:#f1f5f9;color:#0f172a}
+			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#334155}
 			.mr-dialog .wizard-tab.completed .wizard-tab-icon{display:none}
 			.mr-dialog .wizard-tab.completed .wizard-tab-check{display:block}
-			.mr-dialog .wizard-tab.disabled{cursor:not-allowed;opacity:0.4}
-			.mr-dialog .wizard-tab-connector{flex:1;height:3px;background:#e2e8f0;min-width:20px;max-width:60px;margin:0 -4px 22px;border-radius:2px;transition:background 0.3s ease}
-			.mr-dialog .wizard-tab-connector.completed{background:linear-gradient(90deg,#10b981 0%,#34d399 100%)}
-			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%);border:1px solid #ddd6fe;color:#5b21b6;border-radius:10px;padding:9px 18px;margin:0 0 14px;font-size:13px;font-weight:700}
-			.mr-dialog .wizard-current-step-value{color:#4338ca;font-weight:800}
+			.mr-dialog .wizard-tab.disabled{cursor:not-allowed;opacity:0.35}
+			.mr-dialog .wizard-tab-connector{flex:1;height:2px;background:#e2e8f0;min-width:18px;max-width:55px;margin:0 -4px 18px;border-radius:1px}
+			.mr-dialog .wizard-tab-connector.completed{background:#64748b}
+			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:6px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;border-radius:6px;padding:7px 14px;margin:0 0 12px;font-size:12px;font-weight:600}
+			.mr-dialog .wizard-current-step-value{color:#0f172a;font-weight:700}
 			.mr-dialog .wizard-step-panel{display:none}
 			.mr-dialog .wizard-step-panel.active{display:block}
-			.mr-dialog .status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:7px;font-size:12px;font-weight:800}
-			.mr-dialog .status-badge.pending{background:#fff7ed;color:#c2410c;border:1px solid #ffedd5}
-			.mr-dialog .status-badge.in-progress{background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe}
-			.mr-dialog .status-badge.completed{background:#ecfdf5;color:#047857;border:1px solid #d1fae5}
-			.mr-dialog .status-badge.not-repairable{background:#fef2f2;color:#b91c1c;border:1px solid #fee2e2}
-			.mr-dialog .status-badge.ready-for-delivery{background:#faf5ff;color:#7e22ce;border:1px solid #f3e8ff}
-			.mr-dialog .status-badge.delivered{background:#f0fdfa;color:#0f766e;border:1px solid #ccfbf1}
+			
+			/* Status Badge */
+			.mr-dialog .status-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap}
+			.mr-dialog .status-badge.pending{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+			.mr-dialog .status-badge.in-progress{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+			.mr-dialog .status-badge.completed{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+			.mr-dialog .status-badge.not-repairable{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+			.mr-dialog .status-badge.ready-for-delivery{background:#faf5ff;color:#7e22ce;border:1px solid #e9d5ff}
+			.mr-dialog .status-badge.delivered{background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4}
+			
 			@media (max-width: 900px){
 				.mr-dialog{padding:8px}
 				.mr-dialog .dialog-box{width:100%;max-height:96vh}
 				.mr-dialog .row{grid-template-columns:repeat(2,1fr)}
 				.mr-dialog .dialog-footer{flex-direction:column;align-items:stretch}
 				.mr-dialog .wizard-tabs{overflow-x:auto;justify-content:flex-start}
-			}
 			@media (max-width: 560px){
 				.mr-dialog .row{grid-template-columns:1fr}
 				.mr-dialog .totals{grid-template-columns:1fr 1fr}
@@ -1350,43 +1334,40 @@ function show_request_dialog(request_name = null) {
 				<div class="dialog-footer">
 					<div class="left-btns">
 						${is_edit ? `
-							<button class="btn btn-info" id="print_btn" data-name="${esc_attr(data.name)}">
-								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-								${__('Print')}
+							<button class="btn-dialog-icon" id="print_btn" data-name="${esc_attr(data.name)}" title="${__('Print')}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
 							</button>
-							<button class="btn btn-warning" id="label_btn" data-name="${esc_attr(data.name)}">
-								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-								${__('Device Label')}
+							<button class="btn-dialog-icon" id="label_btn" data-name="${esc_attr(data.name)}" title="${__('Device Label')}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
 							</button>
-							<button class="btn btn-whatsapp" id="whatsapp_btn" data-name="${esc_attr(data.name)}">
-								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-								${__('WhatsApp')}
+							<button class="btn-dialog-icon" id="whatsapp_btn" data-name="${esc_attr(data.name)}" title="${__('WhatsApp')}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
 							</button>
 							${!data.sales_invoice && !is_not_repairable_locked ? `
-								<button class="btn btn-invoice" id="invoice_btn" data-name="${esc_attr(data.name)}">
-									<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-									${__('Invoice')}
+								<button class="btn-dialog-icon" id="invoice_btn" data-name="${esc_attr(data.name)}" title="${__('Invoice')}">
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
 								</button>
 							` : ''}
 							${!is_not_repairable_locked ? render_status_buttons(data.status, data.name) : ''}
 						` : ''}
 					</div>
 					<div class="wizard-nav-btns">
-						<button class="btn btn-light" id="wizard_prev_btn" type="button">
-							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-							${__('Previous')}
+						<button class="btn-dialog-icon" id="wizard_prev_btn" type="button" title="${__('Previous')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
 						</button>
-						<button class="btn btn-light" id="wizard_next_btn" type="button">
-							${__('Next')}
-							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+						<button class="btn-dialog-icon" id="wizard_next_btn" type="button" title="${__('Next')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
 						</button>
 					</div>
 					<div class="right-btns">
-						<button class="btn btn-secondary" id="cancel_btn">${__('Cancel')}</button>
+						<button class="btn-dialog-icon" id="cancel_btn" title="${__('Cancel')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+							<span>${__('Cancel')}</span>
+						</button>
 						${!has_invoice && !is_not_repairable_locked ? `
-							<button class="btn btn-primary" id="save_btn">
-								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-								${save_txt}
+							<button class="btn-dialog-icon btn-dialog-save" id="save_btn" title="${save_txt}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+								<span>${save_txt}</span>
 							</button>
 						` : ''}
 					</div>
@@ -2200,31 +2181,26 @@ function render_status_buttons(current_status, request_name) {
 
 	var btn_configs = {
 		'In Progress': {
-			cls: 'btn-info',
 			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
 		},
 		'Completed': {
-			cls: 'btn-success',
 			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
 		},
 		'Not Repairable': {
-			cls: 'btn-danger',
 			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'
 		},
 		'Ready for Delivery': {
-			cls: 'btn-info',
 			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
 		},
 		'Delivered': {
-			cls: 'btn-success',
 			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>'
 		},
 	};
 
 	var html = '';
 	next_statuses.forEach(function(status) {
-		var cfg = btn_configs[status] || { cls: 'btn-secondary', icon: '' };
-		html += `<button class="btn ${cfg.cls} btn-sm status-change-btn" data-status="${esc_attr(status)}" data-name="${esc_attr(request_name)}">${cfg.icon} ${esc(__(status))}</button>`;
+		var cfg = btn_configs[status] || { icon: '' };
+		html += `<button class="btn-dialog-icon status-change-btn" data-status="${esc_attr(status)}" data-name="${esc_attr(request_name)}" title="${esc_attr(__(status))}">${cfg.icon} <span>${esc(__(status))}</span></button>`;
 	});
 	return html;
 }
