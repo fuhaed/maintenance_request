@@ -955,105 +955,109 @@ function show_request_dialog(request_name = null) {
 	
 	$('head').append(`
 		<style id="mr-dialog-style">
-			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;animation:mrFadeIn 0.2s cubic-bezier(0.16,1,0.3,1)}
+			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:1050;display:flex;align-items:center;justify-content:center;padding:8px;animation:mrFadeIn 0.18s cubic-bezier(0.16,1,0.3,1)}
 			@keyframes mrFadeIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
 			.mr-dialog,.mr-dialog input,.mr-dialog select,.mr-dialog textarea{font-variant-numeric:tabular-nums;-webkit-locale:"en-US"}
 			.mr-dialog input[type="date"],.mr-dialog input[type="number"],.mr-dialog .val,.mr-dialog .service-amount{direction:ltr;unicode-bidi:plaintext}
-			.mr-dialog .dialog-box{background:#f8fafc;border-radius:10px;width:96%;max-width:1120px;max-height:92vh;overflow:hidden;box-shadow:0 20px 40px -10px rgba(15,23,42,0.3);position:relative;border:1px solid #cbd5e1;display:flex;flex-direction:column}
-			.mr-dialog .dialog-header{padding:14px 20px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cbd5e1}
-			.mr-dialog .dialog-title{color:#0f172a;font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px}
-			.mr-dialog .dialog-title .badge{background:#f1f5f9;border:1px solid #cbd5e1;padding:3px 9px;border-radius:4px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:#0f172a}
-			.mr-dialog .close-btn{width:28px;height:28px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;color:#64748b;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease}
+			.mr-dialog .dialog-box{background:#f8fafc;border-radius:8px;width:95%;max-width:1060px;max-height:94vh;overflow:hidden;box-shadow:0 15px 35px -10px rgba(15,23,42,0.25);position:relative;border:1px solid #cbd5e1;display:flex;flex-direction:column}
+			.mr-dialog .dialog-header{padding:8px 16px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cbd5e1}
+			.mr-dialog .dialog-title{color:#0f172a;font-size:14px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
+			.mr-dialog .dialog-title .badge{background:#f1f5f9;border:1px solid #cbd5e1;padding:2px 7px;border-radius:4px;font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:#0f172a}
+			.mr-dialog .close-btn{width:26px;height:26px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:5px;color:#64748b;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease}
 			.mr-dialog .close-btn:hover{background:#0f172a;border-color:#0f172a;color:#ffffff}
-			.mr-dialog .dialog-body{padding:16px 20px;background:#f8fafc;overflow-y:auto;max-height:calc(92vh - 130px);flex:1}
-			.mr-dialog .dialog-body::-webkit-scrollbar{width:6px}
-			.mr-dialog .dialog-body::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px}
-			.mr-dialog .dialog-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
-			.mr-dialog .dialog-footer{padding:12px 20px;background:#ffffff;border-top:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 10px 10px;gap:8px;flex-wrap:wrap}
-			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px;background:#ffffff;padding:14px 16px;border-radius:8px;margin-bottom:12px;border:1px solid #cbd5e1}
+			.mr-dialog .dialog-body{padding:10px 16px;background:#f8fafc;overflow-y:auto;max-height:calc(94vh - 95px);flex:1}
+			.mr-dialog .dialog-body::-webkit-scrollbar{width:5px}
+			.mr-dialog .dialog-body::-webkit-scrollbar-track{background:#f1f5f9;border-radius:3px}
+			.mr-dialog .dialog-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+			.mr-dialog .dialog-footer{padding:8px 16px;background:#ffffff;border-top:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 8px 8px;gap:6px;flex-wrap:wrap}
+			
+			/* Compact Rows & Fields */
+			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 10px;background:#ffffff;padding:8px 12px;border-radius:6px;margin-bottom:6px;border:1px solid #cbd5e1}
 			.mr-dialog .row.cols-3{grid-template-columns:repeat(3,1fr)}
 			.mr-dialog .row.cols-2{grid-template-columns:repeat(2,1fr)}
 			.mr-dialog .field{display:flex;flex-direction:column;position:relative}
 			.mr-dialog .field.full{grid-column:1/-1}
-			.mr-dialog .field label{font-size:11.5px;font-weight:600;color:#334155;margin-bottom:5px;display:flex;align-items:center;gap:4px}
+			.mr-dialog .field label{font-size:11px;font-weight:600;color:#334155;margin-bottom:3px;display:flex;align-items:center;gap:3px;line-height:1.2}
 			.mr-dialog .field label .req{color:#ef4444}
-			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:7px 10px;border:1px solid #cbd5e1;border-radius:5px;font-size:12.5px;transition:all 0.15s ease;width:100%;box-sizing:border-box;background:#fff;color:#0f172a}
+			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;height:28px;transition:all 0.15s ease;width:100%;box-sizing:border-box;background:#fff;color:#0f172a}
 			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#0f172a;box-shadow:0 0 0 2px rgba(15,23,42,0.08);background:#fff}
-			.mr-dialog .field textarea{min-height:70px;resize:vertical;line-height:1.5}
+			.mr-dialog .field textarea{min-height:48px;height:auto;resize:vertical;line-height:1.4;padding:4px 8px}
 			
-			/* Dialog Buttons - Excel / Ghost Icon Style */
-			.mr-dialog .btn-dialog-icon{height:32px;min-width:32px;padding:0 9px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;color:#334155;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;transition:all 0.15s ease;position:relative}
-			.mr-dialog .btn-dialog-icon:hover:not(:disabled){background:#0f172a;border-color:#0f172a;color:#ffffff;transform:translateY(-1px);box-shadow:0 2px 5px rgba(15,23,42,0.15)}
+			/* Dialog Buttons - Compact Excel / Ghost Icon Style */
+			.mr-dialog .btn-dialog-icon{height:28px;min-width:28px;padding:0 7px;background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;color:#334155;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:11.5px;font-weight:600;transition:all 0.15s ease;position:relative}
+			.mr-dialog .btn-dialog-icon:hover:not(:disabled){background:#0f172a;border-color:#0f172a;color:#ffffff;transform:translateY(-1px);box-shadow:0 2px 4px rgba(15,23,42,0.12)}
 			.mr-dialog .btn-dialog-icon:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
-			.mr-dialog .btn-dialog-icon svg{width:14px;height:14px;stroke:currentColor}
+			.mr-dialog .btn-dialog-icon svg{width:13px;height:13px;stroke:currentColor}
 			.mr-dialog .btn-dialog-save{background:#0f172a;color:#ffffff;border-color:#0f172a}
 			.mr-dialog .btn-dialog-save:hover{background:#1e293b;border-color:#1e293b}
+			.mr-dialog .btn-add-field{width:28px;height:28px;min-width:28px;padding:0;font-size:13px;font-weight:700}
 			
 			/* Financials KPI Cards */
-			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #cbd5e1}
-			.mr-dialog .totals .item{text-align:center;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px}
-			.mr-dialog .totals .item label{font-size:11px;font-weight:600;color:#64748b;display:block;text-transform:uppercase;margin-bottom:4px;letter-spacing:0.3px}
-			.mr-dialog .totals .item .val{font-size:16px;font-weight:700;color:#0f172a}
-			.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:6px;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #cbd5e1}
+			.mr-dialog .totals .item{text-align:center;padding:6px 8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px}
+			.mr-dialog .totals .item label{font-size:10px;font-weight:600;color:#64748b;display:block;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.2px}
+			.mr-dialog .totals .item .val{font-size:14px;font-weight:700;color:#0f172a}
+			.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 			
 			/* Services Table */
-			.mr-dialog .services-section{background:#fff;padding:14px 16px;border-radius:8px;margin-bottom:12px;border:1px solid #cbd5e1}
-			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-			.mr-dialog .services-header h4{margin:0;font-size:13.5px;font-weight:700;color:#0f172a}
-			.mr-dialog .services-table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden}
-			.mr-dialog .services-table th{background:#f1f5f9;padding:8px 10px;text-align:right;font-weight:700;border:1px solid #cbd5e1;color:#334155}
-			.mr-dialog .services-table td{padding:6px 10px;border:1px solid #e2e8f0;vertical-align:middle}
+			.mr-dialog .services-section{background:#fff;padding:8px 12px;border-radius:6px;margin-bottom:6px;border:1px solid #cbd5e1}
+			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+			.mr-dialog .services-header h4{margin:0;font-size:12.5px;font-weight:700;color:#0f172a}
+			.mr-dialog .services-table{width:100%;border-collapse:collapse;font-size:11.5px;border:1px solid #cbd5e1;border-radius:4px;overflow:hidden}
+			.mr-dialog .services-table th{background:#f1f5f9;padding:6px 8px;text-align:right;font-weight:700;border:1px solid #cbd5e1;color:#334155}
+			.mr-dialog .services-table td{padding:4px 8px;border:1px solid #e2e8f0;vertical-align:middle}
 			.mr-dialog .services-table tr:nth-child(even){background:#f8fafc}
-			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:5px 8px;font-size:12px;border:1px solid #cbd5e1;border-radius:4px}
+			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:3px 6px;font-size:11.5px;border:1px solid #cbd5e1;border-radius:3px;height:24px}
 			.mr-dialog .services-table .col-service{width:40%}
 			.mr-dialog .services-table .col-qty{width:15%}
 			.mr-dialog .services-table .col-rate{width:20%}
 			.mr-dialog .services-table .col-amount{width:15%;text-align:center;font-weight:700;color:#0f172a}
 			.mr-dialog .services-table .col-action{width:10%;text-align:center}
-			.mr-dialog .no-services{text-align:center;padding:14px;color:#94a3b8;font-size:12.5px}
-			.mr-dialog .delete-service-row{width:26px;height:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;cursor:pointer}
+			.mr-dialog .no-services{text-align:center;padding:10px;color:#94a3b8;font-size:12px}
+			.mr-dialog .delete-service-row{width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;cursor:pointer}
 			.mr-dialog .delete-service-row:hover{background:#0f172a;color:#ffffff;border-color:#0f172a}
 
 			/* Searchable Dropdown */
 			.mr-dialog .searchable-dropdown{position:relative;width:100%;flex:1;min-width:0}
-			.mr-dialog .searchable-dropdown .sd-display{padding:7px 10px;border:1px solid #cbd5e1;border-radius:5px;font-size:12.5px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:34px;transition:all 0.15s}
+			.mr-dialog .searchable-dropdown .sd-display{padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:28px;height:28px;transition:all 0.15s}
 			.mr-dialog .searchable-dropdown .sd-display:hover{border-color:#94a3b8}
 			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#0f172a;box-shadow:0 0 0 2px rgba(15,23,42,0.08)}
 			.mr-dialog .searchable-dropdown .sd-display .sd-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f172a}
 			.mr-dialog .searchable-dropdown .sd-display .sd-text.placeholder{color:#94a3b8}
-			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 10px 24px rgba(15,23,42,0.12);z-index:3000;display:none;margin-top:4px;max-height:240px;overflow:hidden;flex-direction:column}
+			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:5px;box-shadow:0 8px 20px rgba(15,23,42,0.12);z-index:3000;display:none;margin-top:2px;max-height:200px;overflow:hidden;flex-direction:column}
 			.mr-dialog .searchable-dropdown .sd-panel.open{display:flex}
-			.mr-dialog .searchable-dropdown .sd-search{padding:6px 8px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
-			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;outline:none}
-			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:190px}
-			.mr-dialog .searchable-dropdown .sd-option{padding:7px 10px;cursor:pointer;font-size:12.5px;border-bottom:1px solid #f8fafc;transition:background 0.1s}
+			.mr-dialog .searchable-dropdown .sd-search{padding:4px 6px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:4px 6px;border:1px solid #cbd5e1;border-radius:3px;font-size:11.5px;outline:none;height:24px}
+			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:160px}
+			.mr-dialog .searchable-dropdown .sd-option{padding:5px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid #f8fafc;transition:background 0.1s}
 			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f1f5f9;color:#0f172a}
 			.mr-dialog .searchable-dropdown .sd-option.selected{background:#0f172a;color:#fff}
 
-			/* Wizard Timeline Tabs - Monochrome Spreadsheet Style */
-			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:12px 16px;margin-bottom:12px;background:#ffffff;border-radius:8px;border:1px solid #cbd5e1}
-			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border-radius:6px;transition:all 0.15s ease;min-width:75px}
+			/* Wizard Timeline Tabs - Ultra-Compact */
+			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:6px 10px;margin-bottom:6px;background:#ffffff;border-radius:6px;border:1px solid #cbd5e1}
+			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:2px 8px;border-radius:5px;transition:all 0.15s ease;min-width:65px}
 			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f8fafc}
-			.mr-dialog .wizard-tab-indicator{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid #cbd5e1;background:#f8fafc;color:#64748b;transition:all 0.15s ease}
-			.mr-dialog .wizard-tab-label{font-size:11.5px;font-weight:600;color:#64748b;white-space:nowrap}
+			.mr-dialog .wizard-tab-indicator{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;border:1px solid #cbd5e1;background:#f8fafc;color:#64748b;transition:all 0.15s ease}
+			.mr-dialog .wizard-tab-indicator svg{width:12px;height:12px}
+			.mr-dialog .wizard-tab-label{font-size:11px;font-weight:600;color:#64748b;white-space:nowrap}
 			.mr-dialog .wizard-tab-check{display:none}
 			.mr-dialog .wizard-tab-icon{display:inline-flex}
-			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#0f172a;background:#0f172a;color:#ffffff;box-shadow:0 2px 6px rgba(15,23,42,0.15)}
+			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#0f172a;background:#0f172a;color:#ffffff;box-shadow:0 2px 4px rgba(15,23,42,0.15)}
 			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#0f172a;font-weight:700}
 			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#94a3b8;background:#f1f5f9;color:#0f172a}
 			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#334155}
 			.mr-dialog .wizard-tab.completed .wizard-tab-icon{display:none}
 			.mr-dialog .wizard-tab.completed .wizard-tab-check{display:block}
 			.mr-dialog .wizard-tab.disabled{cursor:not-allowed;opacity:0.35}
-			.mr-dialog .wizard-tab-connector{flex:1;height:2px;background:#e2e8f0;min-width:18px;max-width:55px;margin:0 -4px 18px;border-radius:1px}
+			.mr-dialog .wizard-tab-connector{flex:1;height:2px;background:#e2e8f0;min-width:14px;max-width:45px;margin:0 -3px 14px;border-radius:1px}
 			.mr-dialog .wizard-tab-connector.completed{background:#64748b}
-			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:6px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;border-radius:6px;padding:7px 14px;margin:0 0 12px;font-size:12px;font-weight:600}
+			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;border-radius:5px;padding:4px 10px;margin:0 0 6px;font-size:11px;font-weight:600}
 			.mr-dialog .wizard-current-step-value{color:#0f172a;font-weight:700}
 			.mr-dialog .wizard-step-panel{display:none}
 			.mr-dialog .wizard-step-panel.active{display:block}
 			
 			/* Status Badge */
-			.mr-dialog .status-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap}
+			.mr-dialog .status-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap}
 			.mr-dialog .status-badge.pending{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
 			.mr-dialog .status-badge.in-progress{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 			.mr-dialog .status-badge.completed{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
@@ -1062,11 +1066,12 @@ function show_request_dialog(request_name = null) {
 			.mr-dialog .status-badge.delivered{background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4}
 			
 			@media (max-width: 900px){
-				.mr-dialog{padding:8px}
-				.mr-dialog .dialog-box{width:100%;max-height:96vh}
+				.mr-dialog{padding:4px}
+				.mr-dialog .dialog-box{width:100%;max-height:98vh}
 				.mr-dialog .row{grid-template-columns:repeat(2,1fr)}
 				.mr-dialog .dialog-footer{flex-direction:column;align-items:stretch}
 				.mr-dialog .wizard-tabs{overflow-x:auto;justify-content:flex-start}
+			}
 			@media (max-width: 560px){
 				.mr-dialog .row{grid-template-columns:1fr}
 				.mr-dialog .totals{grid-template-columns:1fr 1fr}
@@ -1158,9 +1163,9 @@ function show_request_dialog(request_name = null) {
 							<div class="row">
 								<div class="field">
 									<label>${__('Customer')} <span class="req">*</span></label>
-									<div style="display: flex; gap: 5px;">
+									<div style="display: flex; gap: 4px;">
 										<select id="mr_customer" style="flex: 1;"><option value="">${__('Select')}</option></select>
-										<button type="button" class="btn btn-sm btn-success" id="add_customer_btn" title="${__('Add New Customer')}" style="padding: 8px 12px;">+</button>
+										<button type="button" class="btn-dialog-icon btn-add-field" id="add_customer_btn" title="${__('Add New Customer')}">+</button>
 									</div>
 								</div>
 								<div class="field">
@@ -1183,16 +1188,16 @@ function show_request_dialog(request_name = null) {
 								</div>
 								<div class="field">
 									<label>${__('Device')} <span class="req">*</span></label>
-									<div style="display: flex; gap: 5px;">
+									<div style="display: flex; gap: 4px;">
 										<select id="mr_device_type" style="flex: 1;"><option value="">${__('Select')}</option></select>
-										<button type="button" class="btn btn-sm btn-success" id="add_device_type_btn" title="${__('Add New Device Type')}" style="padding: 8px 12px;">+</button>
+										<button type="button" class="btn-dialog-icon btn-add-field" id="add_device_type_btn" title="${__('Add New Device Type')}">+</button>
 									</div>
 								</div>
 								<div class="field">
 									<label>${__('Brand')} <span class="req">*</span></label>
-									<div style="display: flex; gap: 5px;">
+									<div style="display: flex; gap: 4px;">
 										<select id="mr_brand" style="flex: 1;"><option value="">${__('Select')}</option></select>
-										<button type="button" class="btn btn-sm btn-success" id="add_brand_btn" title="${__('Add New Brand')}" style="padding: 8px 12px;">+</button>
+										<button type="button" class="btn-dialog-icon btn-add-field" id="add_brand_btn" title="${__('Add New Brand')}">+</button>
 									</div>
 								</div>
 								<div class="field">
@@ -1221,7 +1226,7 @@ function show_request_dialog(request_name = null) {
 							<div class="row">
 								<div class="field full">
 									<label>${__('Problem')} <span class="req">*</span></label>
-										<textarea id="mr_problem_description" rows="3">${is_edit ? esc(data.problem_description) : ''}</textarea>
+										<textarea id="mr_problem_description" rows="2">${is_edit ? esc(data.problem_description) : ''}</textarea>
 								</div>
 							</div>
 						</div>
@@ -1246,19 +1251,19 @@ function show_request_dialog(request_name = null) {
 							<div class="row" id="diagnosis_field" style="${data.inspection_decision==='Repairable'?'':'display:none'}">
 								<div class="field full">
 									<label>${__('Diagnosis')}</label>
-										<textarea id="mr_diagnosis" rows="3">${esc(data.diagnosis)}</textarea>
+										<textarea id="mr_diagnosis" rows="2">${esc(data.diagnosis)}</textarea>
 								</div>
 							</div>
 							<div class="row" id="repair_notes_field" style="${data.inspection_decision==='Repairable'?'':'display:none'}">
 								<div class="field full">
 									<label>${__('Repair Notes')}</label>
-										<textarea id="mr_repair_notes" rows="3">${esc(data.repair_notes)}</textarea>
+										<textarea id="mr_repair_notes" rows="2">${esc(data.repair_notes)}</textarea>
 								</div>
 							</div>
 							<div class="row" id="not_repairable_reason_field" style="${data.inspection_decision==='Not Repairable'?'':'display:none'}">
 								<div class="field full">
 									<label>${__('Reason (Not Repairable)')}</label>
-										<textarea id="mr_not_repairable_reason" rows="3">${esc(data.not_repairable_reason)}</textarea>
+										<textarea id="mr_not_repairable_reason" rows="2">${esc(data.not_repairable_reason)}</textarea>
 								</div>
 							</div>
 						</div>
@@ -1268,7 +1273,7 @@ function show_request_dialog(request_name = null) {
 							<div class="services-section">
 								<div class="services-header">
 									<h4>${__('Services')}</h4>
-									<button class="btn btn-success btn-sm" id="add_service_btn">+ ${__('Add Service')}</button>
+									<button class="btn-dialog-icon" id="add_service_btn">+ ${__('Add Service')}</button>
 								</div>
 								<table class="services-table">
 									<thead>
