@@ -50,19 +50,19 @@ var ALLOWED_TRANSITIONS = {
 var current_wizard_step = 'intake';
 
 var WIZARD_STEPS = [
-	{ id: 'intake', label: __('Intake'), icon: '1',
+	{ id: 'intake', label: __('Intake'), icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
 	  completed_at: ['In Progress', 'Completed', 'Not Repairable', 'Ready for Delivery', 'Delivered'],
 	  active_at: ['Pending'], show_for_new: true },
-	{ id: 'inspection', label: __('Inspection'), icon: '2',
+	{ id: 'inspection', label: __('Inspection'), icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
 	  completed_at: ['Completed', 'Not Repairable', 'Ready for Delivery', 'Delivered'],
 	  active_at: ['In Progress'], show_for_new: false },
-	{ id: 'services', label: __('Services'), icon: '3',
+	{ id: 'services', label: __('Services'), icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
 	  completed_at: ['Ready for Delivery', 'Delivered'],
 	  active_at: ['Completed', 'Not Repairable'], show_for_new: false },
-	{ id: 'financials', label: __('Financials'), icon: '4',
+	{ id: 'financials', label: __('Financials'), icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
 	  completed_at: ['Ready for Delivery', 'Delivered'],
 	  active_at: ['Completed', 'Not Repairable'], show_for_new: false },
-	{ id: 'delivery', label: __('Delivery'), icon: '5',
+	{ id: 'delivery', label: __('Delivery'), icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
 	  completed_at: ['Delivered'],
 	  active_at: ['Ready for Delivery'], show_for_new: false },
 ];
@@ -161,8 +161,8 @@ function build_wizard_tabs_html(status, is_edit) {
 		}
 		html += '<div class="wizard-tab ' + state + '" data-step="' + step.id + '">';
 		html += '<div class="wizard-tab-indicator">';
-		html += '<span class="wizard-tab-number">' + (idx + 1) + '</span>';
-		html += '<svg class="wizard-tab-check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+		html += '<span class="wizard-tab-icon">' + step.icon + '</span>';
+		html += '<svg class="wizard-tab-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 		html += '</div>';
 		html += '<span class="wizard-tab-label">' + step.label + '</span>';
 		html += '</div>';
@@ -935,129 +935,132 @@ function show_request_dialog(request_name = null) {
 	
 	$('head').append(`
 		<style id="mr-dialog-style">
-			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.58);z-index:1050;display:flex;align-items:center;justify-content:center;padding:18px}
+			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;animation:mrFadeIn 0.22s cubic-bezier(0.16,1,0.3,1)}
+			@keyframes mrFadeIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}
 			.mr-dialog,.mr-dialog input,.mr-dialog select,.mr-dialog textarea{font-variant-numeric:tabular-nums;-webkit-locale:"en-US"}
-			.mr-dialog input[type="date"],.mr-dialog input[type="number"],.mr-dialog .wizard-tab-number,.mr-dialog .badge,.mr-dialog .val,.mr-dialog .service-amount{direction:ltr;unicode-bidi:plaintext}
-			.mr-dialog .dialog-box{background:#fff;border-radius:6px;width:96%;max-width:1120px;max-height:94vh;overflow:hidden;box-shadow:0 22px 60px rgba(15,23,42,0.34);position:relative;border:1px solid rgba(148,163,184,0.25)}
-			.mr-dialog .dialog-header{padding:14px 18px;background:#5b45b5;display:flex;justify-content:space-between;align-items:center;border-radius:6px 6px 0 0;border-bottom:1px solid rgba(255,255,255,0.12)}
-			.mr-dialog .dialog-title{color:#fff;font-size:16px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px}
-			.mr-dialog .dialog-title .badge{background:rgba(255,255,255,0.18);padding:4px 10px;border-radius:4px;font-size:12px;margin-left:0;border:1px solid rgba(255,255,255,0.16)}
-			.mr-dialog .close-btn{width:32px;height:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.16);border-radius:5px;color:#fff;font-size:24px;cursor:pointer;line-height:1;opacity:0.95;display:flex;align-items:center;justify-content:center}
-			.mr-dialog .close-btn:hover{opacity:1;background:rgba(255,255,255,0.2)}
-			.mr-dialog .dialog-body{padding:14px 18px;background:#f4f6f9;overflow-y:auto;max-height:calc(94vh - 132px);overflow-x:visible}
-			.mr-dialog .dialog-footer{padding:12px 18px;background:#fff;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 6px 6px;gap:14px}
-			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px;background:#fff;padding:14px;border-radius:5px;margin-bottom:10px;position:relative;border:1px solid #e8edf3;box-shadow:0 1px 2px rgba(15,23,42,0.035)}
+			.mr-dialog input[type="date"],.mr-dialog input[type="number"],.mr-dialog .val,.mr-dialog .service-amount{direction:ltr;unicode-bidi:plaintext}
+			.mr-dialog .dialog-box{background:#f8fafc;border-radius:16px;width:96%;max-width:1120px;max-height:92vh;overflow:hidden;box-shadow:0 25px 60px -15px rgba(15,23,42,0.45),0 0 0 1px rgba(255,255,255,0.1);position:relative;border:1px solid #e2e8f0;display:flex;flex-direction:column}
+			.mr-dialog .dialog-header{padding:16px 24px;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.12)}
+			.mr-dialog .dialog-title{color:#fff;font-size:16px;font-weight:800;margin:0;display:flex;align-items:center;gap:12px;letter-spacing:-0.2px}
+			.mr-dialog .dialog-title .badge{background:rgba(255,255,255,0.14);backdrop-filter:blur(6px);padding:4px 12px;border-radius:7px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;letter-spacing:0.5px;border:1px solid rgba(255,255,255,0.22);color:#e0e7ff}
+			.mr-dialog .close-btn{width:32px;height:32px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s cubic-bezier(0.16,1,0.3,1)}
+			.mr-dialog .close-btn:hover{background:rgba(239,68,68,0.9);border-color:rgba(239,68,68,1);transform:rotate(90deg)}
+			.mr-dialog .dialog-body{padding:20px 24px;background:#f8fafc;overflow-y:auto;max-height:calc(92vh - 145px);flex:1}
+			.mr-dialog .dialog-body::-webkit-scrollbar{width:6px}
+			.mr-dialog .dialog-body::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px}
+			.mr-dialog .dialog-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+			.mr-dialog .dialog-body::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+			.mr-dialog .dialog-footer{padding:14px 24px;background:#ffffff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 16px 16px;gap:10px;flex-wrap:wrap}
+			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 16px;background:#ffffff;padding:16px 18px;border-radius:12px;margin-bottom:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
 			.mr-dialog .row.cols-3{grid-template-columns:repeat(3,1fr)}
 			.mr-dialog .row.cols-2{grid-template-columns:repeat(2,1fr)}
 			.mr-dialog .field{display:flex;flex-direction:column;position:relative}
 			.mr-dialog .field.full{grid-column:1/-1}
-			.mr-dialog .field label{font-size:12px;font-weight:700;color:#475569;margin-bottom:5px}
-			.mr-dialog .field label .req{color:#e74c3c}
-			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:9px 11px;border:1px solid #d9e0e8;border-radius:4px;font-size:13px;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;width:100%;box-sizing:border-box;background:#fff;color:#1f2937}
-			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#5b45b5;box-shadow:0 0 0 3px rgba(91,69,181,0.12)}
-			.mr-dialog .field textarea{min-height:74px;resize:vertical;line-height:1.55}
-			.mr-dialog .btn{padding:8px 16px;border:none;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.2s,transform 0.2s,box-shadow 0.2s;min-height:34px}
-			.mr-dialog .btn:hover{opacity:0.94;box-shadow:0 4px 10px rgba(15,23,42,0.12)}
-			.mr-dialog .btn-primary{background:#5b45b5;color:#fff}
-			.mr-dialog .btn-secondary{background:#64748b;color:#fff}
-			.mr-dialog .btn-success{background:#16a34a;color:#fff}
-			.mr-dialog .btn-info{background:#2563eb;color:#fff}
-			.mr-dialog .btn-light{background:#f8fafc;color:#475569;border:1px solid #d9e0e8}
-			.mr-dialog .btn:disabled{opacity:0.45;cursor:not-allowed}
-			.mr-dialog .btn-sm{padding:5px 10px;font-size:11px}
-			.mr-dialog .btn-danger{background:#dc2626;color:#fff}
-			.mr-dialog .btn-warning{background:#f59e0b;color:#111827}
-			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;padding:12px;background:#fff;border-radius:5px;border:1px solid #e8edf3}
-			.mr-dialog .totals .item{text-align:right}
-			.mr-dialog .totals .item label{font-size:10px;color:#888;display:block;text-transform:uppercase}
-			.mr-dialog .totals .item .val{font-size:16px;font-weight:700;color:#5b45b5}
-			.mr-dialog .totals .item .val.red{color:#e74c3c}
-			.mr-dialog .totals .item .val.green{color:#27ae60}
+			.mr-dialog .field label{font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+			.mr-dialog .field label .req{color:#ef4444}
+			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);width:100%;box-sizing:border-box;background:#fff;color:#0f172a}
+			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3.5px rgba(99,102,241,0.15);background:#fff}
+			.mr-dialog .field textarea{min-height:76px;resize:vertical;line-height:1.55}
+			.mr-dialog .btn{padding:8px 14px;border:1px solid transparent;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+			.mr-dialog .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,23,42,0.1)}
+			.mr-dialog .btn:active{transform:translateY(0)}
+			.mr-dialog .btn-primary{background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-primary:hover{background:linear-gradient(135deg,#4338ca 0%,#4f46e5 100%)}
+			.mr-dialog .btn-secondary{background:#64748b;color:#fff;border-color:transparent}
+			.mr-dialog .btn-secondary:hover{background:#475569}
+			.mr-dialog .btn-success{background:linear-gradient(135deg,#059669 0%,#10b981 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-success:hover{background:linear-gradient(135deg,#047857 0%,#059669 100%)}
+			.mr-dialog .btn-info{background:linear-gradient(135deg,#2563eb 0%,#3b82f6 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-info:hover{background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%)}
+			.mr-dialog .btn-warning{background:linear-gradient(135deg,#d97706 0%,#f59e0b 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-warning:hover{background:linear-gradient(135deg,#b45309 0%,#d97706 100%)}
+			.mr-dialog .btn-danger{background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-danger:hover{background:linear-gradient(135deg,#b91c1c 0%,#dc2626 100%)}
+			.mr-dialog .btn-whatsapp{background:linear-gradient(135deg,#059669 0%,#22c55e 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-whatsapp:hover{background:linear-gradient(135deg,#047857 0%,#16a34a 100%)}
+			.mr-dialog .btn-invoice{background:linear-gradient(135deg,#0f766e 0%,#14b8a6 100%);color:#fff;border-color:transparent}
+			.mr-dialog .btn-invoice:hover{background:linear-gradient(135deg,#115e59 0%,#0f766e 100%)}
+			.mr-dialog .btn-light{background:#f8fafc;color:#475569;border-color:#e2e8f0}
+			.mr-dialog .btn-light:hover{background:#f1f5f9;color:#1e293b;border-color:#cbd5e1}
+			.mr-dialog .btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none}
+			.mr-dialog .btn-sm{padding:5px 11px;font-size:11.5px;min-height:30px}
+			
+			/* Financials KPI Cards */
+			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:14px;padding:16px 18px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
+			.mr-dialog .totals .item{text-align:center;padding:12px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;transition:all 0.2s}
+			.mr-dialog .totals .item:hover{background:#f1f5f9;border-color:#cbd5e1}
+			.mr-dialog .totals .item label{font-size:11px;font-weight:700;color:#64748b;display:block;text-transform:uppercase;margin-bottom:6px;letter-spacing:0.3px}
+			.mr-dialog .totals .item .val{font-size:18px;font-weight:800;color:#312e81}
+			.mr-dialog .totals .item .val.red{color:#dc2626}
+			.mr-dialog .totals .item .val.green{color:#059669}
 			.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-			.mr-dialog .wizard-nav-btns{margin:0 12px}
-			.mr-dialog .wizard-nav-btns .btn{min-width:80px}
 			
 			/* Services Table */
-			.mr-dialog .services-section{background:#fff;padding:14px;border-radius:5px;margin-bottom:10px;border:1px solid #e8edf3;box-shadow:0 1px 2px rgba(15,23,42,0.035)}
-			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-			.mr-dialog .services-header h4{margin:0;font-size:14px;font-weight:800;color:#1f2937}
-			.mr-dialog .services-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;border:1px solid #e5e7eb}
-			.mr-dialog .services-table th{background:#f8fafc;padding:9px 10px;text-align:right;font-weight:800;border-bottom:1px solid #e5e7eb;color:#475569}
-			.mr-dialog .services-table td{padding:7px 9px;border-bottom:1px solid #edf2f7;vertical-align:middle}
+			.mr-dialog .services-section{background:#fff;padding:18px 20px;border-radius:12px;margin-bottom:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
+			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+			.mr-dialog .services-header h4{margin:0;font-size:14.5px;font-weight:800;color:#0f172a}
+			.mr-dialog .services-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
+			.mr-dialog .services-table th{background:#f8fafc;padding:10px 12px;text-align:right;font-weight:800;border-bottom:1.5px solid #e2e8f0;color:#475569}
+			.mr-dialog .services-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 			.mr-dialog .services-table tr:last-child td{border-bottom:none}
-			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:6px 8px;font-size:12px;border:1px solid #d9e0e8;border-radius:4px}
+			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:7px 9px;font-size:12px;border:1px solid #d9e0e8;border-radius:6px}
 			.mr-dialog .services-table .col-service{width:40%}
 			.mr-dialog .services-table .col-qty{width:15%}
 			.mr-dialog .services-table .col-rate{width:20%}
-			.mr-dialog .services-table .col-amount{width:15%;text-align:center;font-weight:bold}
+			.mr-dialog .services-table .col-amount{width:15%;text-align:center;font-weight:800;color:#4338ca}
 			.mr-dialog .services-table .col-action{width:10%;text-align:center}
-			.mr-dialog .no-services{text-align:center;padding:15px;color:#999;font-size:12px}
-			.mr-dialog .services-table .searchable-dropdown{width:100%}
-			.mr-dialog .services-table .searchable-dropdown .sd-display{padding:5px 8px;font-size:12px;min-height:30px}
-			.mr-dialog .services-table .searchable-dropdown .sd-panel{min-width:250px}
+			.mr-dialog .no-services{text-align:center;padding:18px;color:#94a3b8;font-size:13px}
+			.mr-dialog .delete-service-row{width:28px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:6px}
 
 			/* Searchable Dropdown */
 			.mr-dialog .searchable-dropdown{position:relative;width:100%;flex:1;min-width:0}
-			.mr-dialog .searchable-dropdown .sd-display{padding:9px 11px;border:1px solid #d9e0e8;border-radius:4px;font-size:13px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:38px;transition:border-color 0.2s,box-shadow 0.2s}
-			.mr-dialog .searchable-dropdown .sd-display:hover{border-color:#aaa}
-			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#5b45b5;box-shadow:0 0 0 3px rgba(91,69,181,0.12)}
-			.mr-dialog .searchable-dropdown .sd-display .sd-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333}
-			.mr-dialog .searchable-dropdown .sd-display .sd-text.placeholder{color:#999}
-			.mr-dialog .searchable-dropdown .sd-display .sd-arrow{margin-left:6px;color:#888;font-size:10px;flex-shrink:0}
-			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d9e0e8;border-radius:4px;box-shadow:0 10px 24px rgba(15,23,42,0.18);z-index:3000;display:none;margin-top:3px;max-height:250px;overflow:hidden;flex-direction:column}
+			.mr-dialog .searchable-dropdown .sd-display{padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:38px;transition:all 0.2s}
+			.mr-dialog .searchable-dropdown .sd-display:hover{border-color:#cbd5e1}
+			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#6366f1;box-shadow:0 0 0 3.5px rgba(99,102,241,0.15)}
+			.mr-dialog .searchable-dropdown .sd-display .sd-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f172a}
+			.mr-dialog .searchable-dropdown .sd-display .sd-text.placeholder{color:#94a3b8}
+			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,0.15);z-index:3000;display:none;margin-top:4px;max-height:250px;overflow:hidden;flex-direction:column}
 			.mr-dialog .searchable-dropdown .sd-panel.open{display:flex}
-			.mr-dialog .searchable-dropdown .sd-panel.open-up{top:auto;bottom:100%;margin-top:0;margin-bottom:3px}
-			.mr-dialog .searchable-dropdown .sd-search{padding:8px;border-bottom:1px solid #eee;flex-shrink:0}
-			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:7px 10px;border:1px solid #d9e0e8;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box}
-			.mr-dialog .searchable-dropdown .sd-search input:focus{border-color:#5b45b5}
-			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:200px;flex:1}
-			.mr-dialog .searchable-dropdown .sd-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f5f5f5;transition:background 0.15s}
-			.mr-dialog .searchable-dropdown .sd-option-phone{display:inline-block;margin-right:6px;color:#444;font-size:12px;font-weight:600;direction:ltr}
-			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f3f0ff}
-			.mr-dialog .searchable-dropdown .sd-option.selected{background:#5b45b5;color:#fff}
-			.mr-dialog .searchable-dropdown .sd-option.selected .sd-option-phone{color:#fff}
-			.mr-dialog .searchable-dropdown .sd-option.selected:hover{background:#4c3a99}
-			.mr-dialog .searchable-dropdown .sd-no-results{padding:12px;text-align:center;color:#999;font-size:12px}
-			.mr-dialog .searchable-dropdown.disabled .sd-display{background:#f0f0f0;cursor:not-allowed;color:#888}
+			.mr-dialog .searchable-dropdown .sd-search{padding:8px 10px;border-bottom:1px solid #f1f5f9;background:#f8fafc}
+			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12.5px;outline:none}
+			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:200px}
+			.mr-dialog .searchable-dropdown .sd-option{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f8fafc;transition:background 0.15s}
+			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f5f3ff;color:#4f46e5}
+			.mr-dialog .searchable-dropdown .sd-option.selected{background:#4f46e5;color:#fff}
 
-			/* Wizard Tabs */
-			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:15px 12px 10px;margin-bottom:10px;gap:0;background:#fff;border-radius:5px;border:1px solid #e8edf3;box-shadow:0 1px 2px rgba(15,23,42,0.035)}
-			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border-radius:4px;transition:all 0.2s;min-width:72px}
-			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f3f0ff}
-			.mr-dialog .wizard-tab-indicator{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:1px solid #d9e0e8;background:#fff;color:#64748b;transition:all 0.25s}
-			.mr-dialog .wizard-tab-label{font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;transition:color 0.2s}
+			/* Wizard Timeline Tabs */
+			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:14px 20px;margin-bottom:14px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
+			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border-radius:8px;transition:all 0.2s ease;min-width:80px}
+			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f5f3ff}
+			.mr-dialog .wizard-tab-indicator{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;transition:all 0.25s cubic-bezier(0.4,0,0.2,1)}
+			.mr-dialog .wizard-tab-label{font-size:12px;font-weight:700;color:#64748b;white-space:nowrap;transition:color 0.2s ease}
 			.mr-dialog .wizard-tab-check{display:none}
-			.mr-dialog .wizard-tab-number{display:inline}
-			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#5b45b5;background:#5b45b5;color:#fff;box-shadow:0 6px 14px rgba(91,69,181,0.24)}
-			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#5b45b5;font-weight:800}
-			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#16a34a;background:#16a34a;color:#fff}
-			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#16a34a}
-			.mr-dialog .wizard-tab.completed .wizard-tab-number{display:none}
+			.mr-dialog .wizard-tab-icon{display:inline-flex}
+			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#6366f1;background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);color:#ffffff;box-shadow:0 4px 14px rgba(79,70,229,0.35);transform:scale(1.06)}
+			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#4f46e5;font-weight:800}
+			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#10b981;background:linear-gradient(135deg,#059669 0%,#10b981 100%);color:#ffffff;box-shadow:0 4px 12px rgba(16,185,129,0.25)}
+			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#059669}
+			.mr-dialog .wizard-tab.completed .wizard-tab-icon{display:none}
 			.mr-dialog .wizard-tab.completed .wizard-tab-check{display:block}
-			.mr-dialog .wizard-tab.available .wizard-tab-indicator{border-color:#bbb;color:#888}
-			.mr-dialog .wizard-tab.available .wizard-tab-label{color:#888}
 			.mr-dialog .wizard-tab.disabled{cursor:not-allowed;opacity:0.4}
-			.mr-dialog .wizard-tab-connector{flex:1;height:2px;background:#d9e0e8;min-width:16px;max-width:56px;margin:0 -2px;margin-bottom:22px;transition:background 0.2s}
-			.mr-dialog .wizard-tab-connector.completed{background:#16a34a}
-			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:4px;padding:8px 12px;margin:0 0 12px;font-size:12px;font-weight:700}
-			.mr-dialog .wizard-current-step-value{color:#5b45b5;font-weight:800}
+			.mr-dialog .wizard-tab-connector{flex:1;height:3px;background:#e2e8f0;min-width:20px;max-width:60px;margin:0 -4px 22px;border-radius:2px;transition:background 0.3s ease}
+			.mr-dialog .wizard-tab-connector.completed{background:linear-gradient(90deg,#10b981 0%,#34d399 100%)}
+			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%);border:1px solid #ddd6fe;color:#5b21b6;border-radius:10px;padding:9px 18px;margin:0 0 14px;font-size:13px;font-weight:700}
+			.mr-dialog .wizard-current-step-value{color:#4338ca;font-weight:800}
 			.mr-dialog .wizard-step-panel{display:none}
 			.mr-dialog .wizard-step-panel.active{display:block}
-			.mr-dialog .wizard-step-content{min-height:200px}
-			.mr-dialog .status-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:800;margin-left:0}
-			.mr-dialog .status-badge.pending{background:#fff3e0;color:#f57c00}
-			.mr-dialog .status-badge.in-progress{background:#e3f2fd;color:#1976d2}
-			.mr-dialog .status-badge.completed{background:#e8f5e9;color:#388e3c}
-			.mr-dialog .status-badge.not-repairable{background:#ffebee;color:#d32f2f}
-			.mr-dialog .status-badge.ready-for-delivery{background:#f3e5f5;color:#7b1fa2}
-			.mr-dialog .status-badge.delivered{background:#e0f2f1;color:#00897b}
+			.mr-dialog .status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:7px;font-size:12px;font-weight:800}
+			.mr-dialog .status-badge.pending{background:#fff7ed;color:#c2410c;border:1px solid #ffedd5}
+			.mr-dialog .status-badge.in-progress{background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe}
+			.mr-dialog .status-badge.completed{background:#ecfdf5;color:#047857;border:1px solid #d1fae5}
+			.mr-dialog .status-badge.not-repairable{background:#fef2f2;color:#b91c1c;border:1px solid #fee2e2}
+			.mr-dialog .status-badge.ready-for-delivery{background:#faf5ff;color:#7e22ce;border:1px solid #f3e8ff}
+			.mr-dialog .status-badge.delivered{background:#f0fdfa;color:#0f766e;border:1px solid #ccfbf1}
 			@media (max-width: 900px){
-				.mr-dialog{padding:8px;align-items:flex-start}
+				.mr-dialog{padding:8px}
 				.mr-dialog .dialog-box{width:100%;max-height:96vh}
-				.mr-dialog .dialog-body{max-height:calc(96vh - 150px);padding:12px}
 				.mr-dialog .row{grid-template-columns:repeat(2,1fr)}
 				.mr-dialog .dialog-footer{flex-direction:column;align-items:stretch}
-				.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{justify-content:center}
 				.mr-dialog .wizard-tabs{overflow-x:auto;justify-content:flex-start}
 			}
 			@media (max-width: 560px){
@@ -1327,20 +1330,45 @@ function show_request_dialog(request_name = null) {
 				<div class="dialog-footer">
 					<div class="left-btns">
 						${is_edit ? `
-									<button class="btn btn-info" id="print_btn" data-name="${esc_attr(data.name)}">${__('Print')}</button>
-									<button class="btn btn-warning" id="label_btn" data-name="${esc_attr(data.name)}">${__('Device Label')}</button>
-									<button class="btn btn-whatsapp" id="whatsapp_btn" data-name="${esc_attr(data.name)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> ${__('WhatsApp')}</button>
-									${!data.sales_invoice && !is_not_repairable_locked ? `<button class="btn btn-success" id="invoice_btn" data-name="${esc_attr(data.name)}">${__('Invoice')}</button>` : ''}
-									${!is_not_repairable_locked ? render_status_buttons(data.status, data.name) : ''}
+							<button class="btn btn-info" id="print_btn" data-name="${esc_attr(data.name)}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+								${__('Print')}
+							</button>
+							<button class="btn btn-warning" id="label_btn" data-name="${esc_attr(data.name)}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+								${__('Device Label')}
+							</button>
+							<button class="btn btn-whatsapp" id="whatsapp_btn" data-name="${esc_attr(data.name)}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+								${__('WhatsApp')}
+							</button>
+							${!data.sales_invoice && !is_not_repairable_locked ? `
+								<button class="btn btn-invoice" id="invoice_btn" data-name="${esc_attr(data.name)}">
+									<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+									${__('Invoice')}
+								</button>
+							` : ''}
+							${!is_not_repairable_locked ? render_status_buttons(data.status, data.name) : ''}
 						` : ''}
 					</div>
 					<div class="wizard-nav-btns">
-						<button class="btn btn-light" id="wizard_prev_btn" type="button">${__('Previous')}</button>
-						<button class="btn btn-light" id="wizard_next_btn" type="button">${__('Next')}</button>
+						<button class="btn btn-light" id="wizard_prev_btn" type="button">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+							${__('Previous')}
+						</button>
+						<button class="btn btn-light" id="wizard_next_btn" type="button">
+							${__('Next')}
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+						</button>
 					</div>
 					<div class="right-btns">
 						<button class="btn btn-secondary" id="cancel_btn">${__('Cancel')}</button>
-						${!has_invoice && !is_not_repairable_locked ? `<button class="btn btn-primary" id="save_btn">${save_txt}</button>` : ''}
+						${!has_invoice && !is_not_repairable_locked ? `
+							<button class="btn btn-primary" id="save_btn">
+								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+								${save_txt}
+							</button>
+						` : ''}
 					</div>
 				</div>
 			</div>
@@ -1595,7 +1623,7 @@ function render_services_rows() {
 					<td><input type="number" class="service-qty" value="${esc_attr(service.qty || 1)}" min="1" style="width:100%"></td>
 					<td><input type="number" class="service-rate" value="${esc_attr(service.rate || 0)}" step="0.01" style="width:100%"></td>
 				<td class="service-amount">${fmt(service.amount || 0)}</td>
-				<td><button class="btn btn-danger btn-sm delete-service-row" data-idx="${idx}">&times;</button></td>
+				<td><button class="btn btn-danger btn-sm delete-service-row" data-idx="${idx}" title="${__('Delete')}"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
 			</tr>
 		`;
 	});
@@ -2150,18 +2178,33 @@ function render_status_buttons(current_status, request_name) {
 	var next_statuses = ALLOWED_TRANSITIONS[current_status];
 	if (!next_statuses || next_statuses.length === 0) return '';
 
-	var btn_colors = {
-		'In Progress': 'btn-info',
-		'Completed': 'btn-success',
-		'Not Repairable': 'btn-danger',
-		'Ready for Delivery': 'btn-info',
-		'Delivered': 'btn-success',
+	var btn_configs = {
+		'In Progress': {
+			cls: 'btn-info',
+			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
+		},
+		'Completed': {
+			cls: 'btn-success',
+			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+		},
+		'Not Repairable': {
+			cls: 'btn-danger',
+			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'
+		},
+		'Ready for Delivery': {
+			cls: 'btn-info',
+			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
+		},
+		'Delivered': {
+			cls: 'btn-success',
+			icon: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+		},
 	};
 
 	var html = '';
 	next_statuses.forEach(function(status) {
-		var cls = btn_colors[status] || 'btn-secondary';
-		html += `<button class="btn ${cls} btn-sm status-change-btn" data-status="${esc_attr(status)}" data-name="${esc_attr(request_name)}">${esc(__(status))}</button>`;
+		var cfg = btn_configs[status] || { cls: 'btn-secondary', icon: '' };
+		html += `<button class="btn ${cfg.cls} btn-sm status-change-btn" data-status="${esc_attr(status)}" data-name="${esc_attr(request_name)}">${cfg.icon} ${esc(__(status))}</button>`;
 	});
 	return html;
 }
