@@ -297,6 +297,13 @@ function update_dashboard_partial(data) {
 		e.stopPropagation();
 		print_thermal_sticker($(this).data('name'));
 	});
+	$('.btn-row-print').on('click', function(e) {
+		e.stopPropagation();
+		var name = $(this).data('name');
+		if (name) {
+			window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name), '_blank');
+		}
+	});
 	$('.page-btn, .page-nav-btn').on('click', function() {
 		if ($(this).prop('disabled')) return;
 		var pg = parseInt($(this).data('page'));
@@ -499,12 +506,17 @@ function render_table_rows(requests) {
 				<td><span class="status-badge ${colors[req.status] || 'gray'}">${esc(__(req.status || 'Pending'))}</span></td>
 				<td>
 					<div class="action-cell">
-						<button class="btn-view" data-name="${esc_attr(req.name)}" title="${__('View / Edit')}">${__('View')}</button>
-						<button class="btn-row-whatsapp" data-name="${esc_attr(req.name)}" title="${__('WhatsApp')}">
+						<button class="btn-action-icon btn-view" data-name="${esc_attr(req.name)}" title="${__('View / Edit Request')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+						</button>
+						<button class="btn-action-icon btn-row-whatsapp" data-name="${esc_attr(req.name)}" title="${__('WhatsApp Message')}">
 							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
 						</button>
-						<button class="btn-row-label" data-name="${esc_attr(req.name)}" title="${__('Device Label')}">
-							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="12"/><line x1="10" y1="8" x2="10" y2="12"/><line x1="14" y1="8" x2="14" y2="12"/><line x1="17" y1="8" x2="17" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
+						<button class="btn-action-icon btn-row-label" data-name="${esc_attr(req.name)}" title="${__('Print Device Label')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+						</button>
+						<button class="btn-action-icon btn-row-print" data-name="${esc_attr(req.name)}" title="${__('Print Request')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
 						</button>
 					</div>
 				</td>
@@ -571,6 +583,14 @@ function bind_events() {
 	$('.btn-row-label').on('click', function(e) {
 		e.stopPropagation();
 		print_thermal_sticker($(this).data('name'));
+	});
+
+	$('.btn-row-print').on('click', function(e) {
+		e.stopPropagation();
+		var name = $(this).data('name');
+		if (name) {
+			window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name), '_blank');
+		}
 	});
 
 	// Pagination buttons

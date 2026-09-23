@@ -141,81 +141,100 @@
 	border-color: #667eea;
 }
 
-/* Table Container */
+/* Table Container - Excel / Grid Style */
 .table-container {
-	background: white;
-	border-radius: 10px;
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-	overflow: hidden;
+	background: #ffffff;
+	border-radius: 8px;
+	border: 1px solid #cbd5e1;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+	overflow-x: auto;
 }
 
 .requests-table {
 	width: 100%;
 	border-collapse: collapse;
+	border-spacing: 0;
+	font-size: 12.5px;
 }
 
 .requests-table thead {
-	background: #f8f9fa;
+	background: #f1f5f9;
 }
 
 .requests-table th {
-	padding: 12px 15px;
-	text-align: left;
+	padding: 10px 12px;
+	text-align: right;
 	font-size: 12px;
-	font-weight: 600;
-	color: #2c3e50;
-	border-bottom: 2px solid #eee;
+	font-weight: 700;
+	color: #334155;
+	border: 1px solid #cbd5e1;
+	border-top: none;
+	white-space: nowrap;
+	background: #f1f5f9;
 }
 
 .requests-table td {
-	padding: 10px 15px;
-	font-size: 13px;
-	color: #444;
-	border-bottom: 1px solid #f0f0f0;
+	padding: 8px 12px;
+	font-size: 12.5px;
+	color: #1e293b;
+	border: 1px solid #e2e8f0;
+	vertical-align: middle;
+	background: inherit;
 }
 
 .requests-table tbody tr {
-	transition: background 0.2s ease;
+	transition: background 0.15s ease;
 	cursor: pointer;
 }
 
+.requests-table tbody tr:nth-child(even) {
+	background: #f8fafc;
+}
+
+.requests-table tbody tr:nth-child(odd) {
+	background: #ffffff;
+}
+
 .requests-table tbody tr:hover {
-	background: #f8f9ff;
+	background: #eef2ff !important;
 }
 
 .req-id {
-	font-weight: 600;
-	color: #667eea;
+	font-weight: 700;
+	color: #0f172a;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .customer-name {
-	font-weight: 500;
+	font-weight: 600;
 }
 
 .problem {
-	color: #666;
-	max-width: 200px;
+	color: #475569;
+	max-width: 220px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-/* Status Badge */
+/* Status Badge - Subdued Clean Spreadsheet Tags */
 .status-badge {
-	display: inline-block;
-	padding: 4px 10px;
-	border-radius: 15px;
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 9px;
+	border-radius: 5px;
 	font-size: 11px;
-	font-weight: 600;
-	color: white;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
-.status-badge.orange { background: linear-gradient(135deg, #f39c12, #e67e22); }
-.status-badge.blue { background: linear-gradient(135deg, #3498db, #2980b9); }
-.status-badge.green { background: linear-gradient(135deg, #27ae60, #1e8449); }
-.status-badge.red { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-.status-badge.purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-.status-badge.teal { background: linear-gradient(135deg, #1abc9c, #16a085); }
+.status-badge.orange { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.status-badge.blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.status-badge.green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.status-badge.red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.status-badge.purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.status-badge.teal { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+.status-badge.gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 
 /* Invoice Indicator */
 .invoice-indicator {
@@ -473,48 +492,42 @@
 	}
 }
 
-/* Action Cell Buttons */
+/* Action Cell Buttons - Minimalist Monochrome / Ghost style with tooltips */
 .action-cell {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	gap: 5px;
 	justify-content: flex-start;
 }
 
-.btn-row-whatsapp {
-	background: #25d366;
-	color: #fff;
-	border: none;
-	border-radius: 4px;
-	padding: 5px 8px;
+.btn-action-icon {
+	width: 28px;
+	height: 28px;
+	background: #ffffff;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	color: #475569;
 	cursor: pointer;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	transition: all 0.2s;
+	padding: 0;
+	transition: all 0.15s ease;
+	position: relative;
 }
 
-.btn-row-whatsapp:hover {
-	background: #128c7e;
-	transform: scale(1.05);
+.btn-action-icon:hover {
+	background: #0f172a;
+	border-color: #0f172a;
+	color: #ffffff;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 }
 
-.btn-row-label {
-	background: #f59e0b;
-	color: #fff;
-	border: none;
-	border-radius: 4px;
-	padding: 5px 8px;
-	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s;
-}
-
-.btn-row-label:hover {
-	background: #d97706;
-	transform: scale(1.05);
+.btn-action-icon svg {
+	width: 14px;
+	height: 14px;
+	stroke: currentColor;
 }
 
 .btn-whatsapp {
