@@ -26,7 +26,7 @@
    "is_query_report": 0,
    "label": "Maintenance Dashboard",
    "link_count": 0,
-   "link_to": "maintenance_dashboard",
+   "link_to": "maintenance-dashboard",
    "link_type": "Page",
    "onboard": 1,
    "type": "Link"
@@ -130,7 +130,7 @@
   {
    "color": "Grey",
    "label": "Maintenance Dashboard",
-   "link_to": "maintenance_dashboard",
+   "link_to": "maintenance-dashboard",
    "type": "Page"
   },
   {
