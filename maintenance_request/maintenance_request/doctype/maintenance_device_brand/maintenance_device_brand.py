@@ -4,5 +4,5 @@
 from frappe.model.document import Document
 
 
-class Brand(Document):
+class MaintenanceDeviceBrand(Document):
 	pass

@@ -193,8 +193,9 @@
   },
   {
    "fieldname": "brand",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Brand",
+   "options": "Maintenance Device Brand",
    "reqd": 1
   },
   {
@@ -435,13 +436,23 @@
   },
   {
    "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "All",
+   "role": "Maintenance Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Maintenance User",
    "share": 1,
    "write": 1
   }

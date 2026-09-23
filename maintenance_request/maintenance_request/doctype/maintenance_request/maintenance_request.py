@@ -15,20 +15,38 @@ ALLOWED_TRANSITIONS = {
 	"Not Repairable": ["Ready for Delivery"],
 	"Ready for Delivery": ["Delivered"],
 }
+MAINTENANCE_ROLES = {"Maintenance Manager", "Maintenance User", "System Manager"}
+MAINTENANCE_MANAGER_ROLES = {"Maintenance Manager", "System Manager"}
+
+
+def _has_maintenance_role():
+	return bool(MAINTENANCE_ROLES.intersection(set(frappe.get_roles(frappe.session.user))))
+
+
+def _is_maintenance_manager():
+	return bool(MAINTENANCE_MANAGER_ROLES.intersection(set(frappe.get_roles(frappe.session.user))))
 
 class MaintenanceRequest(Document):
 	def before_save(self):
 		self._auto_set_receivers()
 		self.calculate_totals()
 		self.calculate_warranty_end_date()
-		self._sync_status_with_inspection()
 
 	def validate(self):
+		self._sync_status_with_inspection()
+		self.validate_new_request_status()
 		self.validate_status_transition()
 		self.validate_stage_requirements()
+		self.validate_not_repairable_lock()
 		self.validate_invoice_lock()
+		self.validate_amounts()
 		self.calculate_totals()
 		self.calculate_warranty_end_date()
+
+	def validate_new_request_status(self):
+		"""New requests must start at intake."""
+		if self.is_new() and self.status != "Pending":
+			frappe.throw(_("New Maintenance Requests must start with Pending status"))
 
 	def validate_status_transition(self):
 		"""Ensure status changes follow the allowed flow."""
@@ -96,12 +114,6 @@ class MaintenanceRequest(Document):
 		if old_doc.inspection_decision != self.inspection_decision:
 			if self.inspection_decision == "Not Repairable" and self.status == "In Progress":
 				self.status = "Not Repairable"
-			elif (
-				self.inspection_decision == "Repairable"
-				and old_doc.status == "Not Repairable"
-				and self.status == "Not Repairable"
-			):
-				self.status = "In Progress"
 
 	def _auto_set_receivers(self):
 		"""Auto-set intake_receiver and delivery_receiver to current user."""
@@ -140,6 +152,18 @@ class MaintenanceRequest(Document):
 							)
 						)
 
+	def validate_not_repairable_lock(self):
+		"""Only managers can modify requests after they are marked Not Repairable."""
+		if self.is_new() or _is_maintenance_manager():
+			return
+
+		old_doc = self.get_doc_before_save()
+		if old_doc and old_doc.status == "Not Repairable":
+			frappe.throw(
+				_("This request is locked because it is Not Repairable. Only a maintenance manager can edit it."),
+				frappe.PermissionError,
+			)
+
 	def calculate_totals(self):
 		"""Calculate total amount from services table."""
 		self.total_amount = 0
@@ -156,6 +180,20 @@ class MaintenanceRequest(Document):
 			self.warranty_end_date = add_days(self.actual_delivery_date, self.warranty_days)
 		elif self.warranty_days and not self.actual_delivery_date:
 			self.warranty_end_date = None
+
+	def validate_amounts(self):
+		"""Reject negative quantities, rates, and payments."""
+		if flt(self.estimated_cost) < 0:
+			frappe.throw(_("Estimated Cost cannot be negative"))
+		if flt(self.advance_paid) < 0:
+			frappe.throw(_("Advance Paid cannot be negative"))
+		if flt(self.warranty_days) < 0:
+			frappe.throw(_("Warranty Days cannot be negative"))
+		for row in self.services or []:
+			if flt(row.qty) <= 0:
+				frappe.throw(_("Service row {0}: Qty must be greater than zero").format(row.idx))
+			if flt(row.rate) < 0:
+				frappe.throw(_("Service row {0}: Rate cannot be negative").format(row.idx))
 
 
 @frappe.whitelist()
@@ -271,14 +309,26 @@ def get_customer_list(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 def get_brand_options():
-	"""Return list of brand names for the Brand Select field."""
-	brands = frappe.get_all("Brand", fields=["brand_name"], order_by="brand_name asc", limit_page_length=0)
+	"""Return list of device brand names."""
+	brands = frappe.get_all(
+		"Maintenance Device Brand",
+		fields=["brand_name"],
+		order_by="brand_name asc",
+		limit_page_length=0,
+	)
 	return [b.brand_name for b in brands]
 
 
 @frappe.whitelist()
 def create_customer_quick(customer_name, customer_type="Individual", phone_number=None, company=None):
 	"""Quick create customer from dashboard — phone number is mandatory."""
+	if not _has_maintenance_role():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if not frappe.has_permission("Customer", "create"):
+		frappe.throw(_("Not permitted to create Customer"), frappe.PermissionError)
+	if not frappe.has_permission("Contact", "create"):
+		frappe.throw(_("Not permitted to create Contact"), frappe.PermissionError)
+
 	if not phone_number:
 		frappe.throw(_("Phone number is mandatory when creating a customer"))
 
@@ -299,7 +349,7 @@ def create_customer_quick(customer_name, customer_type="Individual", phone_numbe
 	)
 	if company:
 		customer.company = company
-	customer.insert(ignore_permissions=True)
+	customer.insert()
 
 	contact = frappe.new_doc("Contact")
 	contact.first_name = customer_name
@@ -311,7 +361,10 @@ def create_customer_quick(customer_name, customer_type="Individual", phone_numbe
 		"link_doctype": "Customer",
 		"link_name": customer.name
 	})
-	contact.insert(ignore_permissions=True)
+	contact.insert()
+
+	customer.db_set("customer_primary_contact", contact.name)
+	customer.db_set("mobile_no", phone_number)
 
 	frappe.db.commit()
 
@@ -324,7 +377,13 @@ def create_customer_quick(customer_name, customer_type="Individual", phone_numbe
 @frappe.whitelist()
 def create_sales_invoice(maintenance_request):
 	"""Create Sales Invoice from Maintenance Request."""
+	if not _has_maintenance_role():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if not frappe.has_permission("Sales Invoice", "create"):
+		frappe.throw(_("Not permitted to create Sales Invoice"), frappe.PermissionError)
+
 	mr = frappe.get_doc("Maintenance Request", maintenance_request)
+	mr.check_permission("write")
 
 	if mr.sales_invoice:
 		frappe.throw(_("Sales Invoice already exists for this Maintenance Request"))

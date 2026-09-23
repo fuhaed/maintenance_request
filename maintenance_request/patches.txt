@@ -1,6 +1,11 @@
 [pre_model_sync]
 # Patches added in this section will be executed before doctypes are migrated
 # Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
+maintenance_request.patches.create_roles
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+maintenance_request.patches.migrate_device_brands
+maintenance_request.patches.update_dashboard_roles
+maintenance_request.patches.normalize_legacy_requests
+maintenance_request.patches.fix_existing_customers

@@ -49,6 +49,12 @@ frappe.ui.form.on("Maintenance Request", {
 				query: "maintenance_request.maintenance_request.doctype.maintenance_request.maintenance_request.get_customer_list"
 			};
 		});
+
+		frm.set_query("brand", function() {
+			return {
+				filters: {}
+			};
+		});
 	},
 
 	onload(frm) {
@@ -74,8 +80,6 @@ frappe.ui.form.on("Maintenance Request", {
 			frm.set_value("intake_receiver", frappe.session.user_fullname || frappe.session.user);
 		}
 
-		// Populate Brand select options from Brand DocType
-		load_brand_options(frm);
 	},
 
 	refresh(frm) {
@@ -195,19 +199,6 @@ frappe.ui.form.on("Maintenance Request Service", {
 
 
 // ── Helper Functions ───────────────────────────────────────────────
-
-function load_brand_options(frm) {
-	frappe.call({
-		method: "maintenance_request.maintenance_request.doctype.maintenance_request.maintenance_request.get_brand_options",
-		callback: function(r) {
-			if (r.message) {
-				var options = [""].concat(r.message);
-				frm.set_df_property("brand", "options", options.join("\n"));
-				frm.refresh_field("brand");
-			}
-		}
-	});
-}
 
 function toggle_inspection_fields(frm) {
 	var decision = frm.doc.inspection_decision;

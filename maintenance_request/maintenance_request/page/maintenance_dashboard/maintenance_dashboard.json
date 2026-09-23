@@ -15,7 +15,10 @@
    "role": "System Manager"
   },
   {
-   "role": "All"
+   "role": "Maintenance Manager"
+  },
+  {
+   "role": "Maintenance User"
   }
  ],
  "script": null,

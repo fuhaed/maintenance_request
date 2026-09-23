@@ -2,11 +2,13 @@
 
 import frappe
 from frappe import _
-from frappe.utils import today, flt, cint
+from frappe.utils import today, flt, cint, getdate
 import json
 
 
 PAGE_SIZE = 25
+MAINTENANCE_ROLES = {"Maintenance Manager", "Maintenance User", "System Manager"}
+MAINTENANCE_MANAGER_ROLES = {"Maintenance Manager", "System Manager"}
 
 SEARCH_FIELDS = ["name", "customer", "customer_name", "phone_number", "device_type", "brand", "serial_number", "intake_receiver"]
 
@@ -21,7 +23,7 @@ REQUEST_LIST_FIELDS = [
 REPORT_FIELDS = REQUEST_LIST_FIELDS + ["total_amount", "advance_paid", "outstanding_amount"]
 
 
-def _build_filters(status=None, branch=None, search=None):
+def _build_filters(status=None, branch=None, search=None, from_date=None, to_date=None):
 	"""Build filters and or_filters dicts for Frappe ORM queries."""
 	filters = {}
 	or_filters = {}
@@ -30,6 +32,16 @@ def _build_filters(status=None, branch=None, search=None):
 		filters["status"] = status
 	if branch:
 		filters["branch"] = branch
+	if from_date and to_date:
+		from_date = getdate(from_date)
+		to_date = getdate(to_date)
+		if from_date > to_date:
+			frappe.throw(_("From Date cannot be after To Date"))
+		filters["received_date"] = ["between", [from_date, to_date]]
+	elif from_date:
+		filters["received_date"] = [">=", getdate(from_date)]
+	elif to_date:
+		filters["received_date"] = ["<=", getdate(to_date)]
 
 	if search:
 		search_term = f"%{search}%"
@@ -37,6 +49,18 @@ def _build_filters(status=None, branch=None, search=None):
 			or_filters[field] = ["like", search_term]
 
 	return filters, or_filters
+
+
+def _require_maintenance_access():
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Login required"), frappe.PermissionError)
+	user_roles = set(frappe.get_roles(frappe.session.user))
+	if not MAINTENANCE_ROLES.intersection(user_roles):
+		frappe.throw(_("Not permitted to access Maintenance Dashboard"), frappe.PermissionError)
+
+
+def _is_maintenance_manager():
+	return bool(MAINTENANCE_MANAGER_ROLES.intersection(set(frappe.get_roles(frappe.session.user))))
 
 
 def _get_count(doctype, filters, or_filters):
@@ -53,10 +77,11 @@ def _get_count(doctype, filters, or_filters):
 
 
 @frappe.whitelist()
-def get_dashboard_data(branch=None, status=None, search=None, page=1):
+def get_dashboard_data(branch=None, status=None, search=None, page=1, from_date=None, to_date=None):
+	_require_maintenance_access()
 	page = cint(page) or 1
-	stats = get_statistics(branch)
-	result = get_requests(branch=branch, status=status, search=search, page=page)
+	stats = get_statistics(branch, from_date=from_date, to_date=to_date)
+	result = get_requests(branch=branch, status=status, search=search, page=page, from_date=from_date, to_date=to_date)
 	return {
 		"stats": stats,
 		"requests": result["requests"],
@@ -67,10 +92,20 @@ def get_dashboard_data(branch=None, status=None, search=None, page=1):
 	}
 
 
-def get_statistics(branch=None):
+def get_statistics(branch=None, from_date=None, to_date=None):
 	filters = {}
 	if branch:
 		filters["branch"] = branch
+	if from_date and to_date:
+		from_date = getdate(from_date)
+		to_date = getdate(to_date)
+		if from_date > to_date:
+			frappe.throw(_("From Date cannot be after To Date"))
+		filters["received_date"] = ["between", [from_date, to_date]]
+	elif from_date:
+		filters["received_date"] = [">=", getdate(from_date)]
+	elif to_date:
+		filters["received_date"] = ["<=", getdate(to_date)]
 
 	counts = frappe.get_all(
 		"Maintenance Request",
@@ -98,8 +133,8 @@ def get_statistics(branch=None):
 	return stats
 
 
-def get_requests(status=None, branch=None, search=None, page=1):
-	filters, or_filters = _build_filters(status, branch, search)
+def get_requests(status=None, branch=None, search=None, page=1, from_date=None, to_date=None):
+	filters, or_filters = _build_filters(status, branch, search, from_date, to_date)
 
 	total_count = _get_count("Maintenance Request", filters, or_filters)
 
@@ -131,9 +166,10 @@ def get_requests(status=None, branch=None, search=None, page=1):
 
 
 @frappe.whitelist()
-def get_print_report_data(branch=None, status=None, search=None):
+def get_print_report_data(branch=None, status=None, search=None, from_date=None, to_date=None):
 	"""Get all filtered data for print report (no pagination)."""
-	filters, or_filters = _build_filters(status, branch, search)
+	_require_maintenance_access()
+	filters, or_filters = _build_filters(status, branch, search, from_date, to_date)
 
 	query_args = {
 		"doctype": "Maintenance Request",
@@ -172,6 +208,8 @@ def get_print_report_data(branch=None, status=None, search=None):
 			"branch": branch or _("All Branches"),
 			"status": status or _("All Statuses"),
 			"search": search or "",
+			"from_date": str(getdate(from_date)) if from_date else "",
+			"to_date": str(getdate(to_date)) if to_date else "",
 		},
 		"company_name": company_name,
 		"print_date": today(),
@@ -180,7 +218,9 @@ def get_print_report_data(branch=None, status=None, search=None):
 
 @frappe.whitelist()
 def get_request_details(request_name):
+	_require_maintenance_access()
 	doc = frappe.get_doc("Maintenance Request", request_name)
+	doc.check_permission("read")
 	
 	# Get services
 	services = []
@@ -232,7 +272,63 @@ def get_request_details(request_name):
 
 
 @frappe.whitelist()
+def get_service_item_rate(item_code):
+	_require_maintenance_access()
+	if not item_code:
+		return {"rate": 0, "source": ""}
+
+	item = frappe.db.get_value(
+		"Item",
+		item_code,
+		["name", "standard_rate", "valuation_rate", "last_purchase_rate"],
+		as_dict=True,
+	)
+	if not item:
+		frappe.throw(_("Item {0} not found").format(item_code))
+
+	price_list = frappe.db.get_single_value("Selling Settings", "selling_price_list")
+	price_filters = {"item_code": item_code, "selling": 1}
+	if price_list:
+		price_filters["price_list"] = price_list
+
+	price = frappe.db.get_value(
+		"Item Price",
+		price_filters,
+		["price_list_rate", "price_list"],
+		as_dict=True,
+		order_by="valid_from desc, modified desc",
+	)
+
+	if not price and price_list:
+		price = frappe.db.get_value(
+			"Item Price",
+			{"item_code": item_code, "selling": 1},
+			["price_list_rate", "price_list"],
+			as_dict=True,
+			order_by="valid_from desc, modified desc",
+		)
+
+	if price and flt(price.price_list_rate) > 0:
+		return {
+			"rate": flt(price.price_list_rate),
+			"source": price.price_list or _("Item Price"),
+		}
+
+	for fieldname, label in (
+		("standard_rate", _("Standard Rate")),
+		("valuation_rate", _("Valuation Rate")),
+		("last_purchase_rate", _("Last Purchase Rate")),
+	):
+		rate = flt(item.get(fieldname))
+		if rate > 0:
+			return {"rate": rate, "source": label}
+
+	return {"rate": 0, "source": _("No price found")}
+
+
+@frappe.whitelist()
 def create_request(data):
+	_require_maintenance_access()
 	if isinstance(data, str):
 		data = json.loads(data)
 	
@@ -255,19 +351,25 @@ def create_request(data):
 	doc.advance_paid = data.get("advance_paid") or 0
 	doc.technician = data.get("technician") or None
 	doc.warranty_days = data.get("warranty_days") or 0
-	doc.status = data.get("status") or "Pending"
+	doc.status = "Pending"
 	
 	doc.insert()
-	frappe.db.commit()
 	return doc.name
 
 
 @frappe.whitelist()
 def update_request(data):
+	_require_maintenance_access()
 	if isinstance(data, str):
 		data = json.loads(data)
 	
 	doc = frappe.get_doc("Maintenance Request", data.get("name"))
+	doc.check_permission("write")
+	if doc.status == "Not Repairable" and not _is_maintenance_manager():
+		frappe.throw(
+			_("This request is locked because it is Not Repairable. Only a maintenance manager can edit it."),
+			frappe.PermissionError,
+		)
 	
 	doc.customer = data.get("customer")
 	doc.phone_number = data.get("phone_number")
@@ -312,13 +414,13 @@ def update_request(data):
 			})
 	
 	doc.save()
-	frappe.db.commit()
 	return doc.name
 
 
 @frappe.whitelist()
 def get_customer_options():
 	"""Get customer list with phone numbers for searchable dropdown."""
+	_require_maintenance_access()
 	customers = frappe.get_all(
 		"Customer",
 		filters={"disabled": 0},
@@ -380,7 +482,25 @@ def get_customer_options():
 
 @frappe.whitelist()
 def update_status(request_name, new_status):
+	_require_maintenance_access()
+	allowed_statuses = {
+		"Pending",
+		"In Progress",
+		"Completed",
+		"Not Repairable",
+		"Ready for Delivery",
+		"Delivered",
+	}
+	if new_status not in allowed_statuses:
+		frappe.throw(_("Invalid status: {0}").format(new_status))
+
 	doc = frappe.get_doc("Maintenance Request", request_name)
+	doc.check_permission("write")
+	if doc.status == "Not Repairable" and not _is_maintenance_manager():
+		frappe.throw(
+			_("This request is locked because it is Not Repairable. Only a maintenance manager can edit it."),
+			frappe.PermissionError,
+		)
 	doc.status = new_status
 
 	# Auto-set delivery_receiver and actual_delivery_date when transitioning to Delivered
@@ -391,5 +511,4 @@ def update_status(request_name, new_status):
 			doc.actual_delivery_date = today()
 
 	doc.save()
-	frappe.db.commit()
 	return {"success": True, "status": new_status}

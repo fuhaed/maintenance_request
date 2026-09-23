@@ -4,6 +4,8 @@ var dashboard_page = null;
 var selected_branch = '';
 var selected_status = 'all';
 var search_text = '';
+var from_date = '';
+var to_date = '';
 var current_page = 1;
 var total_pages = 1;
 var total_count = 0;
@@ -84,17 +86,54 @@ function get_auto_step(status) {
 	return map[status] || 'intake';
 }
 
+function can_manage_locked_request() {
+	return frappe.user.has_role('Maintenance Manager') || frappe.user.has_role('System Manager');
+}
+
+function get_visible_wizard_steps() {
+	var is_edit = !!$('#mr_name').val();
+	return is_edit ? WIZARD_STEPS : WIZARD_STEPS.filter(function(step) {
+		return step.show_for_new;
+	});
+}
+
+function get_wizard_step_index(step_id) {
+	var steps = get_visible_wizard_steps();
+	for (var i = 0; i < steps.length; i++) {
+		if (steps[i].id === step_id) return i;
+	}
+	return 0;
+}
+
+function update_wizard_nav() {
+	var steps = get_visible_wizard_steps();
+	var idx = get_wizard_step_index(current_wizard_step);
+	var step = steps[idx] || steps[0];
+	$('.mr-dialog .wizard-current-step-value').text(step ? step.label : '');
+	$('#wizard_prev_btn').prop('disabled', idx <= 0);
+	$('#wizard_next_btn').prop('disabled', idx >= steps.length - 1);
+}
+
+function move_wizard_step(direction) {
+	var steps = get_visible_wizard_steps();
+	var idx = get_wizard_step_index(current_wizard_step);
+	var next_idx = idx + direction;
+	if (next_idx < 0 || next_idx >= steps.length) return;
+	switch_wizard_step(steps[next_idx].id);
+}
+
 function switch_wizard_step(step_id) {
 	current_wizard_step = step_id;
 	$('.mr-dialog .wizard-tab').removeClass('active');
 	$('.mr-dialog .wizard-tab[data-step="' + step_id + '"]').addClass('active');
 	$('.mr-dialog .wizard-step-panel').removeClass('active');
 	$('.mr-dialog .wizard-step-panel[data-step="' + step_id + '"]').addClass('active');
+	update_wizard_nav();
 
-	// Unlock fields in the active step panel for editing (if not invoice-locked and not Delivered)
+	// Unlock fields in the active step panel for editing (if not locked and not Delivered)
 	var $panel = $('.mr-dialog .wizard-step-panel[data-step="' + step_id + '"]');
 	var current_status = $('#mr_status').val() || $('.mr-dialog').data('status');
-	if ($panel.length && !$('.mr-dialog').data('invoice-locked') && current_status !== 'Delivered') {
+	if ($panel.length && !$('.mr-dialog').data('invoice-locked') && !$('.mr-dialog').data('not-repairable-locked') && current_status !== 'Delivered') {
 		$panel.find('input, select, textarea').prop('disabled', false).css('background', '');
 		// Re-enable searchable dropdowns in this panel
 		$panel.find('.searchable-dropdown').each(function() {
@@ -184,7 +223,9 @@ function load_dashboard(page, partial) {
 
 	var args = {
 		branch: selected_branch || '',
-		page: current_page || 1
+		page: current_page || 1,
+		from_date: from_date || '',
+		to_date: to_date || ''
 	};
 
 	if (selected_status && selected_status !== 'all') {
@@ -221,6 +262,7 @@ function load_dashboard(page, partial) {
 
 function update_dashboard_partial(data) {
 	// Update stats numbers
+	$('.stat-card.all .stat-info h3').text(data.stats.total || 0);
 	$('.stat-card.pending .stat-info h3').text(data.stats.pending || 0);
 	$('.stat-card.in-progress .stat-info h3').text(data.stats.in_progress || 0);
 	$('.stat-card.completed .stat-info h3').text(data.stats.completed || 0);
@@ -228,18 +270,9 @@ function update_dashboard_partial(data) {
 	$('.stat-card.delivered .stat-info h3').text(data.stats.delivered || 0);
 	$('.stat-card.not-repairable .stat-info h3').text(data.stats.not_repairable || 0);
 
-	// Update filter tab counts
-	$('.filter-btn[data-status="all"]').html(__('All') + ' (' + (data.stats.total || 0) + ')');
-	$('.filter-btn[data-status="Pending"]').html(__('Pending') + ' (' + (data.stats.pending || 0) + ')');
-	$('.filter-btn[data-status="In Progress"]').html(__('In Progress') + ' (' + (data.stats.in_progress || 0) + ')');
-	$('.filter-btn[data-status="Completed"]').html(__('Completed') + ' (' + (data.stats.completed || 0) + ')');
-	$('.filter-btn[data-status="Ready for Delivery"]').html(__('Ready') + ' (' + (data.stats.ready_for_delivery || 0) + ')');
-	$('.filter-btn[data-status="Delivered"]').html(__('Delivered') + ' (' + (data.stats.delivered || 0) + ')');
-	$('.filter-btn[data-status="Not Repairable"]').html(__('Not Repairable') + ' (' + (data.stats.not_repairable || 0) + ')');
-
-	// Update active filter button
-	$('.filter-btn').removeClass('active');
-	$('.filter-btn[data-status="' + (selected_status || 'all') + '"]').addClass('active');
+	// Update active statistics filter
+	$('.stat-card').removeClass('active');
+	$('.stat-card[data-status="' + (selected_status || 'all') + '"]').addClass('active');
 
 	// Update table rows
 	$('#requests-tbody').html(render_table_rows(data.requests));
@@ -271,45 +304,42 @@ function render_dashboard(page, data) {
 	let html = `
 		<div class="maintenance-dashboard">
 			<div class="stats-container">
-				<div class="stat-card pending" onclick="filter_by_status('Pending')">
+				<div class="stat-card all ${selected_status === 'all' ? 'active' : ''}" data-status="all" onclick="filter_by_status('all')">
+					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></div>
+					<div class="stat-info"><h3>${data.stats.total || 0}</h3><p>${__('All')}</p></div>
+				</div>
+				<div class="stat-card pending ${selected_status === 'Pending' ? 'active' : ''}" data-status="Pending" onclick="filter_by_status('Pending')">
 					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
 					<div class="stat-info"><h3>${data.stats.pending || 0}</h3><p>${__('Pending')}</p></div>
 				</div>
-				<div class="stat-card in-progress" onclick="filter_by_status('In Progress')">
+				<div class="stat-card in-progress ${selected_status === 'In Progress' ? 'active' : ''}" data-status="In Progress" onclick="filter_by_status('In Progress')">
 					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg></div>
 					<div class="stat-info"><h3>${data.stats.in_progress || 0}</h3><p>${__('In Progress')}</p></div>
 				</div>
-				<div class="stat-card completed" onclick="filter_by_status('Completed')">
+				<div class="stat-card completed ${selected_status === 'Completed' ? 'active' : ''}" data-status="Completed" onclick="filter_by_status('Completed')">
 					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
 					<div class="stat-info"><h3>${data.stats.completed || 0}</h3><p>${__('Completed')}</p></div>
 				</div>
-				<div class="stat-card ready" onclick="filter_by_status('Ready for Delivery')">
+				<div class="stat-card ready ${selected_status === 'Ready for Delivery' ? 'active' : ''}" data-status="Ready for Delivery" onclick="filter_by_status('Ready for Delivery')">
 					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></div>
 					<div class="stat-info"><h3>${data.stats.ready_for_delivery || 0}</h3><p>${__('Ready')}</p></div>
 				</div>
-				<div class="stat-card delivered" onclick="filter_by_status('Delivered')">
+				<div class="stat-card delivered ${selected_status === 'Delivered' ? 'active' : ''}" data-status="Delivered" onclick="filter_by_status('Delivered')">
 					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
 					<div class="stat-info"><h3>${data.stats.delivered || 0}</h3><p>${__('Delivered')}</p></div>
 				</div>
-				<div class="stat-card not-repairable" onclick="filter_by_status('Not Repairable')">
+				<div class="stat-card not-repairable ${selected_status === 'Not Repairable' ? 'active' : ''}" data-status="Not Repairable" onclick="filter_by_status('Not Repairable')">
 					<div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>
 					<div class="stat-info"><h3>${data.stats.not_repairable || 0}</h3><p>${__('Not Repairable')}</p></div>
 				</div>
 			</div>
 			<div class="filter-search-row">
-				<div class="filter-tabs">
-					<button class="filter-btn ${selected_status === 'all' ? 'active' : ''}" data-status="all">${__('All')} (${data.stats.total || 0})</button>
-					<button class="filter-btn ${selected_status === 'Pending' ? 'active' : ''}" data-status="Pending">${__('Pending')} (${data.stats.pending || 0})</button>
-					<button class="filter-btn ${selected_status === 'In Progress' ? 'active' : ''}" data-status="In Progress">${__('In Progress')} (${data.stats.in_progress || 0})</button>
-					<button class="filter-btn ${selected_status === 'Completed' ? 'active' : ''}" data-status="Completed">${__('Completed')} (${data.stats.completed || 0})</button>
-					<button class="filter-btn ${selected_status === 'Ready for Delivery' ? 'active' : ''}" data-status="Ready for Delivery">${__('Ready')} (${data.stats.ready_for_delivery || 0})</button>
-					<button class="filter-btn ${selected_status === 'Delivered' ? 'active' : ''}" data-status="Delivered">${__('Delivered')} (${data.stats.delivered || 0})</button>
-					<button class="filter-btn ${selected_status === 'Not Repairable' ? 'active' : ''}" data-status="Not Repairable">${__('Not Repairable')} (${data.stats.not_repairable || 0})</button>
-				</div>
 				<div class="filter-right">
 					<select id="branch-filter" class="branch-select">
 						<option value="">${__('All Branches')}</option>
 					</select>
+					<input type="date" class="date-input" id="from-date-filter" value="${esc_attr(from_date)}" title="${__('From Date')}">
+					<input type="date" class="date-input" id="to-date-filter" value="${esc_attr(to_date)}" title="${__('To Date')}">
 					<input type="text" class="search-input" placeholder="${__('Search...')}" id="request-search" value="${search_text || ''}">
 					<button class="btn-print-report" id="print-report-btn" title="${__('Print Report')}">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -407,6 +437,25 @@ function render_pagination(data) {
 	`;
 }
 
+function esc(value) {
+	return String(value == null ? '' : value)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
+function esc_attr(value) {
+	return esc(value);
+}
+
+function latin_digits(value) {
+	return String(value == null ? '' : value)
+		.replace(/[٠-٩]/g, function(d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); })
+		.replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+}
+
 function render_table_rows(requests) {
 	if (!requests || requests.length === 0) {
 		return `<tr><td colspan="9" class="text-center py-4">${__('No maintenance requests found')}</td></tr>`;
@@ -418,28 +467,29 @@ function render_table_rows(requests) {
 		if (req.problem_description) {
 			let clean = req.problem_description.replace(/<[^>]+>/g, '');
 			problem_text = clean.length > 30 ? clean.substring(0, 30) + '...' : clean;
+			problem_text = esc(problem_text);
 		}
 		let invoice_html = '';
 		if (req.sales_invoice) {
 			invoice_html = `<div class="invoice-indicator">
 				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-				<a href="/app/sales-invoice/${req.sales_invoice}" class="invoice-link" onclick="event.stopPropagation()">${req.sales_invoice}</a>
+				<a href="/app/sales-invoice/${esc_attr(req.sales_invoice)}" class="invoice-link" onclick="event.stopPropagation()">${esc(req.sales_invoice)}</a>
 			</div>`;
 		}
 		html += `
-			<tr class="request-row" data-name="${req.name}" data-status="${req.status || ''}">
+			<tr class="request-row" data-name="${esc_attr(req.name)}" data-status="${esc_attr(req.status || '')}">
 				<td class="req-id">
-					${req.name || ''}
+					${esc(req.name)}
 					${invoice_html}
 				</td>
-				<td>${req.customer_name || ''}</td>
-				<td>${req.phone_number || ''}</td>
-				<td>${req.device_type || ''}${req.brand ? ' - ' + req.brand : ''}</td>
+				<td>${esc(req.customer_name)}</td>
+				<td>${esc(req.phone_number)}</td>
+				<td>${esc(req.device_type)}${req.brand ? ' - ' + esc(req.brand) : ''}</td>
 				<td class="problem">${problem_text}</td>
 				<td class="est-cost">${fmt(req.estimated_cost)}</td>
-				<td>${req.received_date ? frappe.datetime.str_to_user(req.received_date) : ''}</td>
-				<td><span class="status-badge ${colors[req.status] || 'gray'}">${__(req.status || 'Pending')}</span></td>
-				<td><button class="btn-view" data-name="${req.name}">${__('View')}</button></td>
+				<td>${req.received_date ? latin_digits(frappe.datetime.str_to_user(req.received_date)) : ''}</td>
+				<td><span class="status-badge ${colors[req.status] || 'gray'}">${esc(__(req.status || 'Pending'))}</span></td>
+				<td><button class="btn-view" data-name="${esc_attr(req.name)}">${__('View')}</button></td>
 			</tr>
 		`;
 	});
@@ -455,15 +505,6 @@ function load_branch_filter() {
 }
 
 function bind_events() {
-	// Status filter buttons
-	$('.filter-btn').on('click', function() {
-		$('.filter-btn').removeClass('active');
-		$(this).addClass('active');
-		selected_status = $(this).data('status');
-		current_page = 1;
-		load_dashboard(dashboard_page, true);
-	});
-
 	// Branch filter
 	$('#branch-filter').on('change', function() {
 		selected_branch = $(this).val();
@@ -480,6 +521,17 @@ function bind_events() {
 			current_page = 1;
 			load_dashboard(dashboard_page, true);
 		}, 400);
+	});
+
+	$('#from-date-filter, #to-date-filter').on('change', function() {
+		from_date = $('#from-date-filter').val();
+		to_date = $('#to-date-filter').val();
+		if (from_date && to_date && from_date > to_date) {
+			frappe.msgprint(__('From Date cannot be after To Date'));
+			return;
+		}
+		current_page = 1;
+		load_dashboard(dashboard_page, true);
 	});
 
 	// Row double click
@@ -512,7 +564,7 @@ function bind_events() {
 }
 
 function filter_by_status(status) {
-	selected_status = status;
+	selected_status = status || 'all';
 	current_page = 1;
 	load_dashboard(dashboard_page, true);
 }
@@ -528,7 +580,9 @@ function print_filtered_report() {
 	var args = {
 		branch: selected_branch || '',
 		status: (selected_status && selected_status !== 'all') ? selected_status : '',
-		search: search_text || ''
+		search: search_text || '',
+		from_date: from_date || '',
+		to_date: to_date || ''
 	};
 
 	frappe.call({
@@ -556,31 +610,37 @@ function open_print_window(data) {
 
 	var filter_desc = [];
 	if (data.filters.branch && data.filters.branch !== __('All Branches')) {
-		filter_desc.push(__('Branch') + ': ' + data.filters.branch);
+		filter_desc.push(__('Branch') + ': ' + esc(data.filters.branch));
 	}
 	if (data.filters.status && data.filters.status !== __('All Statuses')) {
-		filter_desc.push(__('Status') + ': ' + (status_labels[data.filters.status] || data.filters.status));
+		filter_desc.push(__('Status') + ': ' + esc(status_labels[data.filters.status] || data.filters.status));
 	}
 	if (data.filters.search) {
-		filter_desc.push(__('Search') + ': ' + data.filters.search);
+		filter_desc.push(__('Search') + ': ' + esc(data.filters.search));
+	}
+	if (data.filters.from_date) {
+		filter_desc.push(__('From Date') + ': ' + esc(latin_digits(frappe.datetime.str_to_user(data.filters.from_date))));
+	}
+	if (data.filters.to_date) {
+		filter_desc.push(__('To Date') + ': ' + esc(latin_digits(frappe.datetime.str_to_user(data.filters.to_date))));
 	}
 
 	var rows_html = '';
 	data.requests.forEach(function(req, idx) {
 		rows_html += `
 			<tr>
-				<td style="text-align:center">${idx + 1}</td>
-				<td>${req.name}</td>
-				<td>${req.customer_name || ''}</td>
-				<td>${req.phone_number || ''}</td>
-				<td>${req.device_type || ''}${req.brand ? ' - ' + req.brand : ''}</td>
-				<td>${req.branch || ''}</td>
-				<td style="text-align:center">${req.received_date ? frappe.datetime.str_to_user(req.received_date) : ''}</td>
-				<td style="text-align:center">${status_labels[req.status] || req.status}</td>
-				<td style="text-align:right">${fmt_number(req.estimated_cost)}</td>
-				<td style="text-align:right">${fmt_number(req.total_amount)}</td>
-				<td style="text-align:right">${fmt_number(req.advance_paid)}</td>
-				<td style="text-align:right">${fmt_number(req.outstanding_amount)}</td>
+				<td style="text-align:center">${latin_digits(idx + 1)}</td>
+					<td>${esc(req.name)}</td>
+					<td>${esc(req.customer_name)}</td>
+					<td>${esc(req.phone_number)}</td>
+					<td>${esc(req.device_type)}${req.brand ? ' - ' + esc(req.brand) : ''}</td>
+					<td>${esc(req.branch)}</td>
+					<td style="text-align:center">${req.received_date ? latin_digits(frappe.datetime.str_to_user(req.received_date)) : ''}</td>
+					<td style="text-align:center">${esc(status_labels[req.status] || req.status)}</td>
+				<td style="text-align:right">${latin_digits(fmt_number(req.estimated_cost))}</td>
+				<td style="text-align:right">${latin_digits(fmt_number(req.total_amount))}</td>
+				<td style="text-align:right">${latin_digits(fmt_number(req.advance_paid))}</td>
+				<td style="text-align:right">${latin_digits(fmt_number(req.outstanding_amount))}</td>
 			</tr>
 		`;
 	});
@@ -617,9 +677,9 @@ function open_print_window(data) {
 		</head>
 		<body>
 			<div class="report-header">
-				${data.company_name ? '<div class="company-name">' + data.company_name + '</div>' : ''}
+					${data.company_name ? '<div class="company-name">' + esc(data.company_name) + '</div>' : ''}
 				<h1>${__('Maintenance Requests Report')}</h1>
-				<div class="report-date">${__('Printed on')}: ${frappe.datetime.str_to_user(data.print_date)} | ${__('Total Records')}: ${data.summary.total_records}</div>
+				<div class="report-date">${__('Printed on')}: ${latin_digits(frappe.datetime.str_to_user(data.print_date))} | ${__('Total Records')}: ${latin_digits(data.summary.total_records)}</div>
 			</div>
 			${filter_desc.length > 0 ? '<div class="filters-info">' + __('Filters') + ': ' + filter_desc.join(' | ') + '</div>' : ''}
 			<table>
@@ -667,8 +727,172 @@ function open_print_window(data) {
 	}
 }
 
+function get_request_barcode_value(request_name) {
+	var digits = String(request_name || '').replace(/\D/g, '');
+	if (!digits) return '00000';
+	return digits.slice(-5).padStart(5, '0');
+}
+
+function code39_svg(value) {
+	var patterns = {
+		'0': 'nnnwwnwnn',
+		'1': 'wnnwnnnnw',
+		'2': 'nnwwnnnnw',
+		'3': 'wnwwnnnnn',
+		'4': 'nnnwwnnnw',
+		'5': 'wnnwwnnnn',
+		'6': 'nnwwwnnnn',
+		'7': 'nnnwnnwnw',
+		'8': 'wnnwnnwnn',
+		'9': 'nnwwnnwnn',
+		'*': 'nwnnwnwnn'
+	};
+	var encoded = '*' + String(value || '').replace(/\D/g, '') + '*';
+	var narrow = 2;
+	var wide = 5;
+	var gap = narrow;
+	var height = 46;
+	var x = 0;
+	var bars = '';
+
+	encoded.split('').forEach(function(ch) {
+		var pattern = patterns[ch];
+		if (!pattern) return;
+		for (var i = 0; i < pattern.length; i++) {
+			var width = pattern[i] === 'w' ? wide : narrow;
+			if (i % 2 === 0) {
+				bars += '<rect x="' + x + '" y="0" width="' + width + '" height="' + height + '"></rect>';
+			}
+			x += width;
+		}
+		x += gap;
+	});
+
+	return '<svg class="label-barcode" viewBox="0 0 ' + x + ' ' + height + '" preserveAspectRatio="none" aria-label="' + esc_attr(value) + '">' + bars + '</svg>';
+}
+
+function print_device_label(data) {
+	if (!data || !data.name) return;
+
+	var barcode_value = get_request_barcode_value(data.name);
+	var phone = data.phone_number || '';
+	var branch = data.branch || '';
+	var device = data.device_type || '';
+	var brand = data.brand || '';
+	var device_text = brand ? brand + ' ' + device : device;
+
+	var label_html = `
+		<!DOCTYPE html>
+		<html dir="rtl">
+		<head>
+			<meta charset="UTF-8">
+			<title>${esc(__('Device Label'))} ${esc(data.name)}</title>
+			<style>
+				@page { size: 50mm 25mm; margin: 0; }
+				* { box-sizing: border-box; }
+				html, body {
+					width: 50mm;
+					height: 25mm;
+					margin: 0;
+					padding: 0;
+					background: #fff;
+					color: #111;
+					font-family: Arial, Tahoma, sans-serif;
+				}
+				.label {
+					width: 50mm;
+					height: 25mm;
+					padding: 1.8mm 2.4mm 1.6mm;
+					overflow: hidden;
+					display: grid;
+					grid-template-rows: 10.5mm 5mm 5.5mm;
+					row-gap: 0.6mm;
+				}
+				.barcode-wrap {
+					direction: ltr;
+					width: 100%;
+					height: 10.5mm;
+					display: flex;
+					justify-content: center;
+					align-items: stretch;
+				}
+				.label-barcode {
+					width: 42mm;
+					height: 9.8mm;
+					fill: #111;
+				}
+				.mid-row,
+				.bottom-row {
+					display: grid;
+					grid-template-columns: 1fr 1fr;
+					align-items: center;
+					column-gap: 2mm;
+					font-weight: 700;
+					line-height: 1;
+				}
+				.phone {
+					direction: ltr;
+					text-align: left;
+					font-size: 11pt;
+					letter-spacing: 0.2px;
+				}
+				.device {
+					text-align: right;
+					font-size: 8pt;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.branch {
+					justify-self: start;
+					border: 0.35mm solid #111;
+					padding: 0.8mm 2mm;
+					font-size: 8pt;
+					line-height: 1;
+					max-width: 25mm;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.request-code {
+					direction: ltr;
+					text-align: right;
+					font-size: 9pt;
+					font-weight: 700;
+				}
+			</style>
+		</head>
+		<body>
+			<div class="label">
+				<div class="barcode-wrap">${code39_svg(barcode_value)}</div>
+				<div class="mid-row">
+					<div class="phone">${esc(phone)}</div>
+					<div class="device">${esc(device_text)}</div>
+				</div>
+				<div class="bottom-row">
+					<div class="branch">${esc(branch)}</div>
+					<div class="request-code">${esc(barcode_value)}</div>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+
+	var print_window = window.open('', '_blank');
+	if (print_window) {
+		print_window.document.write(label_html);
+		print_window.document.close();
+		print_window.focus();
+		setTimeout(function() {
+			print_window.print();
+		}, 250);
+	} else {
+		frappe.msgprint(__('Please allow popups for this site to print the label'));
+	}
+}
+
 function fmt_number(v) {
-	return (parseFloat(v) || 0).toLocaleString('en-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+	return (parseFloat(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ============================================
@@ -683,49 +907,57 @@ function show_request_dialog(request_name = null) {
 	
 	$('head').append(`
 		<style id="mr-dialog-style">
-			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1050;display:flex;align-items:center;justify-content:center}
-			.mr-dialog .dialog-box{background:#fff;border-radius:10px;width:95%;max-width:950px;max-height:92vh;overflow:visible;box-shadow:0 15px 50px rgba(0,0,0,0.3);position:relative}
-			.mr-dialog .dialog-header{padding:12px 16px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;justify-content:space-between;align-items:center;border-radius:10px 10px 0 0}
-			.mr-dialog .dialog-title{color:#fff;font-size:15px;font-weight:600;margin:0}
-			.mr-dialog .dialog-title .badge{background:rgba(255,255,255,0.25);padding:3px 10px;border-radius:4px;font-size:12px;margin-left:10px}
-			.mr-dialog .close-btn{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1;opacity:0.9}
-			.mr-dialog .close-btn:hover{opacity:1}
-			.mr-dialog .dialog-body{padding:12px 16px;background:#f8f9fa;overflow-y:auto;max-height:calc(92vh - 120px);overflow-x:visible}
-			.mr-dialog .dialog-footer{padding:10px 16px;background:#fff;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;border-radius:0 0 10px 10px}
-			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 12px;background:#fff;padding:10px 12px;border-radius:6px;margin-bottom:8px;position:relative}
+			.mr-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.58);z-index:1050;display:flex;align-items:center;justify-content:center;padding:18px}
+			.mr-dialog,.mr-dialog input,.mr-dialog select,.mr-dialog textarea{font-variant-numeric:tabular-nums;-webkit-locale:"en-US"}
+			.mr-dialog input[type="date"],.mr-dialog input[type="number"],.mr-dialog .wizard-tab-number,.mr-dialog .badge,.mr-dialog .val,.mr-dialog .service-amount{direction:ltr;unicode-bidi:plaintext}
+			.mr-dialog .dialog-box{background:#fff;border-radius:6px;width:96%;max-width:1120px;max-height:94vh;overflow:hidden;box-shadow:0 22px 60px rgba(15,23,42,0.34);position:relative;border:1px solid rgba(148,163,184,0.25)}
+			.mr-dialog .dialog-header{padding:14px 18px;background:#5b45b5;display:flex;justify-content:space-between;align-items:center;border-radius:6px 6px 0 0;border-bottom:1px solid rgba(255,255,255,0.12)}
+			.mr-dialog .dialog-title{color:#fff;font-size:16px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px}
+			.mr-dialog .dialog-title .badge{background:rgba(255,255,255,0.18);padding:4px 10px;border-radius:4px;font-size:12px;margin-left:0;border:1px solid rgba(255,255,255,0.16)}
+			.mr-dialog .close-btn{width:32px;height:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.16);border-radius:5px;color:#fff;font-size:24px;cursor:pointer;line-height:1;opacity:0.95;display:flex;align-items:center;justify-content:center}
+			.mr-dialog .close-btn:hover{opacity:1;background:rgba(255,255,255,0.2)}
+			.mr-dialog .dialog-body{padding:14px 18px;background:#f4f6f9;overflow-y:auto;max-height:calc(94vh - 132px);overflow-x:visible}
+			.mr-dialog .dialog-footer{padding:12px 18px;background:#fff;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 6px 6px;gap:14px}
+			.mr-dialog .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px;background:#fff;padding:14px;border-radius:5px;margin-bottom:10px;position:relative;border:1px solid #e8edf3;box-shadow:0 1px 2px rgba(15,23,42,0.035)}
 			.mr-dialog .row.cols-3{grid-template-columns:repeat(3,1fr)}
 			.mr-dialog .row.cols-2{grid-template-columns:repeat(2,1fr)}
 			.mr-dialog .field{display:flex;flex-direction:column;position:relative}
 			.mr-dialog .field.full{grid-column:1/-1}
-			.mr-dialog .field label{font-size:11px;font-weight:600;color:#555;margin-bottom:4px}
+			.mr-dialog .field label{font-size:12px;font-weight:700;color:#475569;margin-bottom:5px}
 			.mr-dialog .field label .req{color:#e74c3c}
-			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:8px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;transition:border-color 0.2s;width:100%;box-sizing:border-box}
-			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
-			.mr-dialog .field textarea{min-height:50px;resize:vertical}
-			.mr-dialog .btn{padding:8px 18px;border:none;border-radius:5px;font-size:13px;font-weight:500;cursor:pointer;transition:opacity 0.2s}
-			.mr-dialog .btn:hover{opacity:0.9}
-			.mr-dialog .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-			.mr-dialog .btn-secondary{background:#6c757d;color:#fff}
-			.mr-dialog .btn-success{background:#27ae60;color:#fff}
-			.mr-dialog .btn-info{background:#3498db;color:#fff}
+			.mr-dialog .field input,.mr-dialog .field textarea,.mr-dialog .field select{padding:9px 11px;border:1px solid #d9e0e8;border-radius:4px;font-size:13px;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;width:100%;box-sizing:border-box;background:#fff;color:#1f2937}
+			.mr-dialog .field input:focus,.mr-dialog .field textarea:focus,.mr-dialog .field select:focus{outline:none;border-color:#5b45b5;box-shadow:0 0 0 3px rgba(91,69,181,0.12)}
+			.mr-dialog .field textarea{min-height:74px;resize:vertical;line-height:1.55}
+			.mr-dialog .btn{padding:8px 16px;border:none;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.2s,transform 0.2s,box-shadow 0.2s;min-height:34px}
+			.mr-dialog .btn:hover{opacity:0.94;box-shadow:0 4px 10px rgba(15,23,42,0.12)}
+			.mr-dialog .btn-primary{background:#5b45b5;color:#fff}
+			.mr-dialog .btn-secondary{background:#64748b;color:#fff}
+			.mr-dialog .btn-success{background:#16a34a;color:#fff}
+			.mr-dialog .btn-info{background:#2563eb;color:#fff}
+			.mr-dialog .btn-light{background:#f8fafc;color:#475569;border:1px solid #d9e0e8}
+			.mr-dialog .btn:disabled{opacity:0.45;cursor:not-allowed}
 			.mr-dialog .btn-sm{padding:5px 10px;font-size:11px}
-			.mr-dialog .btn-danger{background:#e74c3c;color:#fff}
-			.mr-dialog .totals{display:flex;justify-content:flex-end;gap:20px;padding:10px 12px;background:#fff;border-radius:6px}
+			.mr-dialog .btn-danger{background:#dc2626;color:#fff}
+			.mr-dialog .btn-warning{background:#f59e0b;color:#111827}
+			.mr-dialog .totals{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;padding:12px;background:#fff;border-radius:5px;border:1px solid #e8edf3}
 			.mr-dialog .totals .item{text-align:right}
 			.mr-dialog .totals .item label{font-size:10px;color:#888;display:block;text-transform:uppercase}
-			.mr-dialog .totals .item .val{font-size:16px;font-weight:700;color:#667eea}
+			.mr-dialog .totals .item .val{font-size:16px;font-weight:700;color:#5b45b5}
 			.mr-dialog .totals .item .val.red{color:#e74c3c}
 			.mr-dialog .totals .item .val.green{color:#27ae60}
-			.mr-dialog .left-btns,.mr-dialog .right-btns{display:flex;gap:8px}
+			.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+			.mr-dialog .wizard-nav-btns{margin:0 12px}
+			.mr-dialog .wizard-nav-btns .btn{min-width:80px}
 			
 			/* Services Table */
-			.mr-dialog .services-section{background:#fff;padding:10px 12px;border-radius:6px;margin-bottom:8px}
-			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-			.mr-dialog .services-header h4{margin:0;font-size:13px;font-weight:600;color:#333}
-			.mr-dialog .services-table{width:100%;border-collapse:collapse;font-size:12px}
-			.mr-dialog .services-table th{background:#f0f0f0;padding:8px;text-align:right;font-weight:600;border:1px solid #ddd}
-			.mr-dialog .services-table td{padding:6px 8px;border:1px solid #ddd;vertical-align:middle}
-			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:5px;font-size:12px;border:1px solid #ddd;border-radius:3px}
+			.mr-dialog .services-section{background:#fff;padding:14px;border-radius:5px;margin-bottom:10px;border:1px solid #e8edf3;box-shadow:0 1px 2px rgba(15,23,42,0.035)}
+			.mr-dialog .services-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+			.mr-dialog .services-header h4{margin:0;font-size:14px;font-weight:800;color:#1f2937}
+			.mr-dialog .services-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;border:1px solid #e5e7eb}
+			.mr-dialog .services-table th{background:#f8fafc;padding:9px 10px;text-align:right;font-weight:800;border-bottom:1px solid #e5e7eb;color:#475569}
+			.mr-dialog .services-table td{padding:7px 9px;border-bottom:1px solid #edf2f7;vertical-align:middle}
+			.mr-dialog .services-table tr:last-child td{border-bottom:none}
+			.mr-dialog .services-table input,.mr-dialog .services-table select{padding:6px 8px;font-size:12px;border:1px solid #d9e0e8;border-radius:4px}
 			.mr-dialog .services-table .col-service{width:40%}
 			.mr-dialog .services-table .col-qty{width:15%}
 			.mr-dialog .services-table .col-rate{width:20%}
@@ -738,61 +970,80 @@ function show_request_dialog(request_name = null) {
 
 			/* Searchable Dropdown */
 			.mr-dialog .searchable-dropdown{position:relative;width:100%;flex:1;min-width:0}
-			.mr-dialog .searchable-dropdown .sd-display{padding:8px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:38px;transition:border-color 0.2s}
+			.mr-dialog .searchable-dropdown .sd-display{padding:9px 11px;border:1px solid #d9e0e8;border-radius:4px;font-size:13px;width:100%;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:38px;transition:border-color 0.2s,box-shadow 0.2s}
 			.mr-dialog .searchable-dropdown .sd-display:hover{border-color:#aaa}
-			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
+			.mr-dialog .searchable-dropdown .sd-display.focused{border-color:#5b45b5;box-shadow:0 0 0 3px rgba(91,69,181,0.12)}
 			.mr-dialog .searchable-dropdown .sd-display .sd-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333}
 			.mr-dialog .searchable-dropdown .sd-display .sd-text.placeholder{color:#999}
 			.mr-dialog .searchable-dropdown .sd-display .sd-arrow{margin-left:6px;color:#888;font-size:10px;flex-shrink:0}
-			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1100;display:none;margin-top:2px;max-height:250px;overflow:hidden;flex-direction:column}
+			.mr-dialog .searchable-dropdown .sd-panel{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d9e0e8;border-radius:4px;box-shadow:0 10px 24px rgba(15,23,42,0.18);z-index:3000;display:none;margin-top:3px;max-height:250px;overflow:hidden;flex-direction:column}
 			.mr-dialog .searchable-dropdown .sd-panel.open{display:flex}
+			.mr-dialog .searchable-dropdown .sd-panel.open-up{top:auto;bottom:100%;margin-top:0;margin-bottom:3px}
 			.mr-dialog .searchable-dropdown .sd-search{padding:8px;border-bottom:1px solid #eee;flex-shrink:0}
-			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box}
-			.mr-dialog .searchable-dropdown .sd-search input:focus{border-color:#667eea}
+			.mr-dialog .searchable-dropdown .sd-search input{width:100%;padding:7px 10px;border:1px solid #d9e0e8;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box}
+			.mr-dialog .searchable-dropdown .sd-search input:focus{border-color:#5b45b5}
 			.mr-dialog .searchable-dropdown .sd-options{overflow-y:auto;max-height:200px;flex:1}
 			.mr-dialog .searchable-dropdown .sd-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f5f5f5;transition:background 0.15s}
-			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f0f4ff}
-			.mr-dialog .searchable-dropdown .sd-option.selected{background:#667eea;color:#fff}
-			.mr-dialog .searchable-dropdown .sd-option.selected:hover{background:#5a6fd6}
+			.mr-dialog .searchable-dropdown .sd-option-phone{display:inline-block;margin-right:6px;color:#444;font-size:12px;font-weight:600;direction:ltr}
+			.mr-dialog .searchable-dropdown .sd-option:hover{background:#f3f0ff}
+			.mr-dialog .searchable-dropdown .sd-option.selected{background:#5b45b5;color:#fff}
+			.mr-dialog .searchable-dropdown .sd-option.selected .sd-option-phone{color:#fff}
+			.mr-dialog .searchable-dropdown .sd-option.selected:hover{background:#4c3a99}
 			.mr-dialog .searchable-dropdown .sd-no-results{padding:12px;text-align:center;color:#999;font-size:12px}
 			.mr-dialog .searchable-dropdown.disabled .sd-display{background:#f0f0f0;cursor:not-allowed;color:#888}
 
 			/* Wizard Tabs */
-			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:16px 12px 8px;margin-bottom:10px;gap:0;background:#fff;border-radius:6px}
-			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:6px 14px;border-radius:6px;transition:all 0.2s;min-width:70px}
-			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f0f4ff}
-			.mr-dialog .wizard-tab-indicator{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border:2px solid #ddd;background:#fff;color:#999;transition:all 0.25s}
-			.mr-dialog .wizard-tab-label{font-size:11px;font-weight:600;color:#999;white-space:nowrap;transition:color 0.2s}
+			.mr-dialog .wizard-tabs{display:flex;align-items:center;justify-content:center;padding:15px 12px 10px;margin-bottom:10px;gap:0;background:#fff;border-radius:5px;border:1px solid #e8edf3;box-shadow:0 1px 2px rgba(15,23,42,0.035)}
+			.mr-dialog .wizard-tab{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border-radius:4px;transition:all 0.2s;min-width:72px}
+			.mr-dialog .wizard-tab:hover:not(.disabled){background:#f3f0ff}
+			.mr-dialog .wizard-tab-indicator{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:1px solid #d9e0e8;background:#fff;color:#64748b;transition:all 0.25s}
+			.mr-dialog .wizard-tab-label{font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;transition:color 0.2s}
 			.mr-dialog .wizard-tab-check{display:none}
 			.mr-dialog .wizard-tab-number{display:inline}
-			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#667eea;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff}
-			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#667eea;font-weight:700}
-			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#27ae60;background:#27ae60;color:#fff}
-			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#27ae60}
+			.mr-dialog .wizard-tab.active .wizard-tab-indicator{border-color:#5b45b5;background:#5b45b5;color:#fff;box-shadow:0 6px 14px rgba(91,69,181,0.24)}
+			.mr-dialog .wizard-tab.active .wizard-tab-label{color:#5b45b5;font-weight:800}
+			.mr-dialog .wizard-tab.completed .wizard-tab-indicator{border-color:#16a34a;background:#16a34a;color:#fff}
+			.mr-dialog .wizard-tab.completed .wizard-tab-label{color:#16a34a}
 			.mr-dialog .wizard-tab.completed .wizard-tab-number{display:none}
 			.mr-dialog .wizard-tab.completed .wizard-tab-check{display:block}
 			.mr-dialog .wizard-tab.available .wizard-tab-indicator{border-color:#bbb;color:#888}
 			.mr-dialog .wizard-tab.available .wizard-tab-label{color:#888}
 			.mr-dialog .wizard-tab.disabled{cursor:not-allowed;opacity:0.4}
-			.mr-dialog .wizard-tab-connector{flex:1;height:2px;background:#ddd;min-width:16px;max-width:50px;margin:0 -2px;margin-bottom:20px;transition:background 0.2s}
-			.mr-dialog .wizard-tab-connector.completed{background:#27ae60}
+			.mr-dialog .wizard-tab-connector{flex:1;height:2px;background:#d9e0e8;min-width:16px;max-width:56px;margin:0 -2px;margin-bottom:22px;transition:background 0.2s}
+			.mr-dialog .wizard-tab-connector.completed{background:#16a34a}
+			.mr-dialog .wizard-current-step{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:4px;padding:8px 12px;margin:0 0 12px;font-size:12px;font-weight:700}
+			.mr-dialog .wizard-current-step-value{color:#5b45b5;font-weight:800}
 			.mr-dialog .wizard-step-panel{display:none}
 			.mr-dialog .wizard-step-panel.active{display:block}
 			.mr-dialog .wizard-step-content{min-height:200px}
-			.mr-dialog .status-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-left:8px}
+			.mr-dialog .status-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:800;margin-left:0}
 			.mr-dialog .status-badge.pending{background:#fff3e0;color:#f57c00}
 			.mr-dialog .status-badge.in-progress{background:#e3f2fd;color:#1976d2}
 			.mr-dialog .status-badge.completed{background:#e8f5e9;color:#388e3c}
 			.mr-dialog .status-badge.not-repairable{background:#ffebee;color:#d32f2f}
 			.mr-dialog .status-badge.ready-for-delivery{background:#f3e5f5;color:#7b1fa2}
 			.mr-dialog .status-badge.delivered{background:#e0f2f1;color:#00897b}
+			@media (max-width: 900px){
+				.mr-dialog{padding:8px;align-items:flex-start}
+				.mr-dialog .dialog-box{width:100%;max-height:96vh}
+				.mr-dialog .dialog-body{max-height:calc(96vh - 150px);padding:12px}
+				.mr-dialog .row{grid-template-columns:repeat(2,1fr)}
+				.mr-dialog .dialog-footer{flex-direction:column;align-items:stretch}
+				.mr-dialog .left-btns,.mr-dialog .right-btns,.mr-dialog .wizard-nav-btns{justify-content:center}
+				.mr-dialog .wizard-tabs{overflow-x:auto;justify-content:flex-start}
+			}
+			@media (max-width: 560px){
+				.mr-dialog .row{grid-template-columns:1fr}
+				.mr-dialog .totals{grid-template-columns:1fr 1fr}
+			}
 		</style>
-	`);
+		`);
 
-	if (request_name) {
-		frappe.call({
-			method: 'maintenance_request.maintenance_request.page.maintenance_dashboard.maintenance_dashboard.get_request_details',
-			args: { request_name: request_name },
+		if (request_name) {
+			render_request_loading_dialog(request_name);
+			frappe.call({
+				method: 'maintenance_request.maintenance_request.page.maintenance_dashboard.maintenance_dashboard.get_request_details',
+				args: { request_name: request_name },
 			callback: function(r) { 
 				if (r.message) {
 					current_services = r.message.services || [];
@@ -802,37 +1053,68 @@ function show_request_dialog(request_name = null) {
 		});
 	} else {
 		render_dialog(null);
+		}
 	}
-}
 
-function render_dialog(data) {
-	const is_edit = data !== null;
+	function render_request_loading_dialog(request_name) {
+		var html = `
+			<div class="mr-dialog">
+				<div class="dialog-box">
+					<div class="dialog-header">
+						<h5 class="dialog-title">${__('Loading')} <span class="badge">${esc(request_name)}</span></h5>
+						<button class="close-btn" id="close_btn">&times;</button>
+					</div>
+					<div class="dialog-body" style="min-height:260px;display:flex;align-items:center;justify-content:center;background:#fff">
+						<div class="text-center">
+							<div class="spinner-border text-primary"></div>
+							<div style="margin-top:12px;color:#666;font-size:13px">${__('Loading')}...</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
+		$('body').append(html).addClass('modal-open');
+		$('#close_btn').on('click', close_dialog);
+	}
+
+	function render_dialog(data) {
+		$('.mr-dialog').remove();
+		const is_edit = data !== null;
 	const has_invoice = is_edit && data.sales_invoice;
 	const title = is_edit ? __('Edit Request') : __('New Request');
 	const save_txt = is_edit ? __('Save') : __('Create');
 	const request_name = is_edit ? data.name : '';
 	const status = is_edit ? (data.status || 'Pending') : 'Pending';
+	const is_not_repairable_locked = is_edit && status === 'Not Repairable' && !can_manage_locked_request();
 
 	// Status badge helper
 	var status_css = status.toLowerCase().replace(/ /g, '-');
-	var status_badge = is_edit ? `<span class="status-badge ${status_css}">${__(status)}</span>` : '';
+	var status_badge = is_edit ? `<span class="status-badge ${status_css}">${esc(__(status))}</span>` : '';
 
 	let html = `
 		<div class="mr-dialog">
 			<div class="dialog-box">
 				<div class="dialog-header">
-					<h5 class="dialog-title">${title} ${is_edit ? `<span class="badge">${data.name}</span>` : ''} ${status_badge}</h5>
+						<h5 class="dialog-title">${title} ${is_edit ? `<span class="badge">${esc(data.name)}</span>` : ''} ${status_badge}</h5>
 					<button class="close-btn" id="close_btn">&times;</button>
 				</div>
 				<div class="dialog-body">
-					<input type="hidden" id="mr_name" value="${request_name}">
-					<input type="hidden" id="mr_status" value="${status}">
+						<input type="hidden" id="mr_name" value="${esc_attr(request_name)}">
+						<input type="hidden" id="mr_status" value="${esc_attr(status)}">
 					${has_invoice ? `<div style="background:#fff3e0;padding:8px 12px;border-radius:6px;margin-bottom:8px;font-size:12px;color:#e65100;display:flex;align-items:center;gap:8px">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-						${__('This request is locked because invoice {0} has been issued.', ['<a href="/app/sales-invoice/' + data.sales_invoice + '" onclick="event.stopPropagation()">' + data.sales_invoice + '</a>'])}
+							${__('This request is locked because invoice {0} has been issued.', ['<a href="/app/sales-invoice/' + esc_attr(data.sales_invoice) + '" onclick="event.stopPropagation()">' + esc(data.sales_invoice) + '</a>'])}
+					</div>` : ''}
+					${is_not_repairable_locked ? `<div style="background:#ffebee;padding:8px 12px;border-radius:6px;margin-bottom:8px;font-size:12px;color:#b71c1c;display:flex;align-items:center;gap:8px">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+						${__('This request is locked because it is Not Repairable. Only a maintenance manager can edit it.')}
 					</div>` : ''}
 
 					${build_wizard_tabs_html(status, is_edit)}
+					<div class="wizard-current-step">
+						<span>${__('Current Step')}</span>
+						<span class="wizard-current-step-value"></span>
+					</div>
 
 					<div class="wizard-step-content">
 						<!-- STEP 1: Intake -->
@@ -847,15 +1129,15 @@ function render_dialog(data) {
 								</div>
 								<div class="field">
 									<label>${__('Phone')}</label>
-									<input type="text" id="mr_phone_number" value="${is_edit ? (data.phone_number||'') : ''}">
+										<input type="text" id="mr_phone_number" value="${is_edit ? esc_attr(data.phone_number) : ''}">
 								</div>
 								<div class="field">
 									<label>${__('Phone 2')}</label>
-									<input type="text" id="mr_secondary_phone" value="${is_edit ? (data.secondary_phone||'') : ''}">
+										<input type="text" id="mr_secondary_phone" value="${is_edit ? esc_attr(data.secondary_phone) : ''}">
 								</div>
 								<div class="field">
 									<label>${__('Intake Receiver')} <span class="req">*</span></label>
-									<input type="text" id="mr_intake_receiver" value="${is_edit ? (data.intake_receiver||'') : frappe.session.user_fullname}" readonly style="background:#f0f0f0;cursor:not-allowed">
+										<input type="text" id="mr_intake_receiver" value="${is_edit ? esc_attr(data.intake_receiver) : esc_attr(frappe.session.user_fullname)}" readonly style="background:#f0f0f0;cursor:not-allowed">
 								</div>
 							</div>
 							<div class="row">
@@ -879,31 +1161,31 @@ function render_dialog(data) {
 								</div>
 								<div class="field">
 									<label>${__('Model')}</label>
-									<input type="text" id="mr_model" value="${is_edit ? (data.model||'') : ''}">
+										<input type="text" id="mr_model" value="${is_edit ? esc_attr(data.model) : ''}">
 								</div>
 							</div>
 							<div class="row">
 								<div class="field">
 									<label>${__('Serial')}</label>
-									<input type="text" id="mr_serial_number" value="${is_edit ? (data.serial_number||'') : ''}">
+										<input type="text" id="mr_serial_number" value="${is_edit ? esc_attr(data.serial_number) : ''}">
 								</div>
 								<div class="field">
 									<label>${__('Condition')}</label>
-									<input type="text" id="mr_device_condition" value="${is_edit ? (data.device_condition||'') : ''}">
+										<input type="text" id="mr_device_condition" value="${is_edit ? esc_attr(data.device_condition) : ''}">
 								</div>
 								<div class="field">
 									<label>${__('Received')}</label>
-									<input type="date" id="mr_received_date" value="${is_edit ? (data.received_date||'') : frappe.datetime.get_today()}">
+										<input type="date" id="mr_received_date" value="${is_edit ? esc_attr(data.received_date) : frappe.datetime.get_today()}">
 								</div>
 								<div class="field">
 									<label>${__('Expected Delivery')} <span class="req">*</span></label>
-									<input type="date" id="mr_expected_delivery_date" value="${is_edit ? (data.expected_delivery_date||'') : ''}">
+										<input type="date" id="mr_expected_delivery_date" value="${is_edit ? esc_attr(data.expected_delivery_date) : ''}">
 								</div>
 							</div>
 							<div class="row">
 								<div class="field full">
 									<label>${__('Problem')} <span class="req">*</span></label>
-									<textarea id="mr_problem_description" rows="3">${is_edit ? (data.problem_description||'') : ''}</textarea>
+										<textarea id="mr_problem_description" rows="3">${is_edit ? esc(data.problem_description) : ''}</textarea>
 								</div>
 							</div>
 						</div>
@@ -928,19 +1210,19 @@ function render_dialog(data) {
 							<div class="row" id="diagnosis_field" style="${data.inspection_decision==='Repairable'?'':'display:none'}">
 								<div class="field full">
 									<label>${__('Diagnosis')}</label>
-									<textarea id="mr_diagnosis" rows="3">${data.diagnosis||''}</textarea>
+										<textarea id="mr_diagnosis" rows="3">${esc(data.diagnosis)}</textarea>
 								</div>
 							</div>
 							<div class="row" id="repair_notes_field" style="${data.inspection_decision==='Repairable'?'':'display:none'}">
 								<div class="field full">
 									<label>${__('Repair Notes')}</label>
-									<textarea id="mr_repair_notes" rows="3">${data.repair_notes||''}</textarea>
+										<textarea id="mr_repair_notes" rows="3">${esc(data.repair_notes)}</textarea>
 								</div>
 							</div>
 							<div class="row" id="not_repairable_reason_field" style="${data.inspection_decision==='Not Repairable'?'':'display:none'}">
 								<div class="field full">
 									<label>${__('Reason (Not Repairable)')}</label>
-									<textarea id="mr_not_repairable_reason" rows="3">${data.not_repairable_reason||''}</textarea>
+										<textarea id="mr_not_repairable_reason" rows="3">${esc(data.not_repairable_reason)}</textarea>
 								</div>
 							</div>
 						</div>
@@ -974,11 +1256,11 @@ function render_dialog(data) {
 							<div class="row cols-2">
 								<div class="field">
 									<label>${__('Estimated Cost')}</label>
-									<input type="number" id="mr_estimated_cost" value="${data.estimated_cost||0}" step="0.01">
+										<input type="number" id="mr_estimated_cost" value="${esc_attr(data.estimated_cost||0)}" step="0.01">
 								</div>
 								<div class="field">
 									<label>${__('Advance Paid')}</label>
-									<input type="number" id="mr_advance_paid" value="${data.advance_paid||0}" step="0.01">
+										<input type="number" id="mr_advance_paid" value="${esc_attr(data.advance_paid||0)}" step="0.01">
 								</div>
 							</div>
 							<div class="totals">
@@ -994,19 +1276,19 @@ function render_dialog(data) {
 							<div class="row">
 								<div class="field">
 									<label>${__('Actual Delivery Date')}</label>
-									<input type="date" id="mr_actual_delivery_date" value="${data.actual_delivery_date||''}">
+										<input type="date" id="mr_actual_delivery_date" value="${esc_attr(data.actual_delivery_date)}">
 								</div>
 								<div class="field">
 									<label>${__('Delivery Receiver')}</label>
-									<input type="text" id="mr_delivery_receiver" value="${data.delivery_receiver||''}" readonly style="background:#f0f0f0;cursor:not-allowed">
+										<input type="text" id="mr_delivery_receiver" value="${esc_attr(data.delivery_receiver)}" readonly style="background:#f0f0f0;cursor:not-allowed">
 								</div>
 								<div class="field">
 									<label>${__('Warranty Days')}</label>
-									<input type="number" id="mr_warranty_days" value="${data.warranty_days||0}">
+										<input type="number" id="mr_warranty_days" value="${esc_attr(data.warranty_days||0)}">
 								</div>
 								<div class="field">
 									<label>${__('Warranty Terms')}</label>
-									<input type="text" id="mr_warranty_terms" value="${data.warranty_terms||''}">
+										<input type="text" id="mr_warranty_terms" value="${esc_attr(data.warranty_terms)}">
 								</div>
 							</div>
 						</div>
@@ -1016,14 +1298,19 @@ function render_dialog(data) {
 				<div class="dialog-footer">
 					<div class="left-btns">
 						${is_edit ? `
-							<button class="btn btn-info" id="print_btn" data-name="${data.name}">${__('Print')}</button>
-							${!data.sales_invoice ? `<button class="btn btn-success" id="invoice_btn" data-name="${data.name}">${__('Invoice')}</button>` : ''}
-							${render_status_buttons(data.status, data.name)}
+									<button class="btn btn-info" id="print_btn" data-name="${esc_attr(data.name)}">${__('Print')}</button>
+									<button class="btn btn-warning" id="label_btn" data-name="${esc_attr(data.name)}">${__('Device Label')}</button>
+									${!data.sales_invoice && !is_not_repairable_locked ? `<button class="btn btn-success" id="invoice_btn" data-name="${esc_attr(data.name)}">${__('Invoice')}</button>` : ''}
+									${!is_not_repairable_locked ? render_status_buttons(data.status, data.name) : ''}
 						` : ''}
+					</div>
+					<div class="wizard-nav-btns">
+						<button class="btn btn-light" id="wizard_prev_btn" type="button">${__('Previous')}</button>
+						<button class="btn btn-light" id="wizard_next_btn" type="button">${__('Next')}</button>
 					</div>
 					<div class="right-btns">
 						<button class="btn btn-secondary" id="cancel_btn">${__('Cancel')}</button>
-						${!has_invoice ? `<button class="btn btn-primary" id="save_btn">${save_txt}</button>` : ''}
+						${!has_invoice && !is_not_repairable_locked ? `<button class="btn btn-primary" id="save_btn">${save_txt}</button>` : ''}
 					</div>
 				</div>
 			</div>
@@ -1056,9 +1343,19 @@ function render_dialog(data) {
 		update_searchable_disabled();
 	}
 
+	if (is_not_repairable_locked) {
+		$('.mr-dialog').data('not-repairable-locked', true);
+		$('.mr-dialog input, .mr-dialog select, .mr-dialog textarea').prop('disabled', true).css('background', '#f0f0f0');
+		$('.mr-dialog #add_customer_btn, .mr-dialog #add_brand_btn, .mr-dialog #add_device_type_btn, .mr-dialog #add_service_btn').hide();
+		$('.mr-dialog .delete-service-row').hide();
+		update_searchable_disabled();
+	}
+
 	// Auto-select the correct wizard step based on status
 	if (is_edit) {
 		switch_wizard_step(get_auto_step(data.status));
+	} else {
+		switch_wizard_step('intake');
 	}
 
 	if (!is_edit) {
@@ -1078,6 +1375,12 @@ function render_dialog(data) {
 		var $tab = $(this);
 		if ($tab.hasClass('disabled')) return;
 		switch_wizard_step($tab.data('step'));
+	});
+	$('#wizard_prev_btn').on('click', function() {
+		move_wizard_step(-1);
+	});
+	$('#wizard_next_btn').on('click', function() {
+		move_wizard_step(1);
 	});
 
 	// Add Brand button
@@ -1163,12 +1466,16 @@ function render_dialog(data) {
 		});
 	});
 
-	$('#print_btn').on('click', function() {
-		var name = $(this).data('name');
-		if (name) {
-			window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name), '_blank');
-		}
-	});
+		$('#print_btn').on('click', function() {
+			var name = $(this).data('name');
+			if (name) {
+				window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name), '_blank');
+			}
+		});
+
+		$('#label_btn').on('click', function() {
+			print_device_label(is_edit ? data : null);
+		});
 
 	$('#invoice_btn').on('click', function() {
 		var name = $(this).data('name');
@@ -1220,31 +1527,10 @@ function render_dialog(data) {
 		update_totals();
 	});
 
-	// Update service item
-	$('#services_tbody').on('change', '.service-item', function() {
-		var $row = $(this).closest('tr');
-		var idx = $row.data('idx');
-		var item = $(this).val();
-
-		current_services[idx].service_item = item;
-
-		// Get item rate
-		if (item) {
-			frappe.call({
-				method: 'frappe.client.get_value',
-				args: {
-					doctype: 'Item',
-					filters: { name: item },
-					fieldname: ['standard_rate']
-				},
-				callback: function(r) {
-					if (r.message && r.message.standard_rate) {
-						$row.find('.service-rate').val(r.message.standard_rate).trigger('change');
-					}
-				}
-			});
-		}
-	});
+		// Update service item
+		$('#services_tbody').on('change', '.service-item', function() {
+			update_service_item($(this), $(this).val());
+		});
 }
 
 function render_services_rows() {
@@ -1255,10 +1541,10 @@ function render_services_rows() {
 	let html = '';
 	current_services.forEach((service, idx) => {
 		html += `
-			<tr data-idx="${idx}">
-				<td><select class="service-item" style="width:100%" data-idx="${idx}"><option value="">${__('Select')}</option></select></td>
-				<td><input type="number" class="service-qty" value="${service.qty || 1}" min="1" style="width:100%"></td>
-				<td><input type="number" class="service-rate" value="${service.rate || 0}" step="0.01" style="width:100%"></td>
+				<tr data-idx="${idx}">
+					<td><select class="service-item" style="width:100%" data-idx="${idx}"><option value="">${__('Select')}</option></select></td>
+					<td><input type="number" class="service-qty" value="${esc_attr(service.qty || 1)}" min="1" style="width:100%"></td>
+					<td><input type="number" class="service-rate" value="${esc_attr(service.rate || 0)}" step="0.01" style="width:100%"></td>
 				<td class="service-amount">${fmt(service.amount || 0)}</td>
 				<td><button class="btn btn-danger btn-sm delete-service-row" data-idx="${idx}">&times;</button></td>
 			</tr>
@@ -1277,18 +1563,86 @@ function add_service_row() {
 	refresh_services_table();
 }
 
-function refresh_services_table() {
-	$('#services_tbody').html(render_services_rows());
-	load_items_options();
-	// Make each service-item select searchable
-	$('#services_tbody .service-item').each(function() {
-		var $sel = $(this);
-		if (!$sel.data('sd-init')) {
-			make_searchable($sel, { placeholder: __('Select Service') });
+	function refresh_services_table() {
+		$('#services_tbody').html(render_services_rows());
+		load_items_options();
+		// Make each service-item select searchable
+		$('#services_tbody .service-item').each(function() {
+			var $sel = $(this);
+			if (!$sel.data('sd-init')) {
+				make_searchable($sel, {
+					placeholder: __('Select Service'),
+					onChange: function(value) {
+						update_service_item($sel, value);
+					}
+				});
+			}
+		});
+		update_totals();
+	}
+
+	function update_service_item($select, item) {
+		var $row = $select.closest('tr');
+		var idx = parseInt($row.data('idx'), 10);
+		if (!current_services[idx]) return;
+
+		current_services[idx].service_item = item || '';
+		if (!item) {
+			current_services[idx].rate = 0;
+			current_services[idx].amount = 0;
+			$row.find('.service-rate').val(0);
+			$row.find('.service-amount').text(fmt(0));
+			update_totals();
+			return;
 		}
-	});
-	update_totals();
-}
+
+		get_service_rate_client(item, function(rate) {
+			$row.find('.service-rate').val(rate).trigger('change');
+			if (!rate) {
+				frappe.show_alert({
+					message: __('No price found for selected item'),
+					indicator: 'orange'
+				});
+			}
+		});
+	}
+
+	function get_service_rate_client(item, done) {
+		frappe.call({
+			method: 'frappe.client.get_list',
+			args: {
+				doctype: 'Item Price',
+				filters: {
+					item_code: item,
+					selling: 1
+				},
+				fields: ['price_list_rate'],
+				order_by: 'valid_from desc, modified desc',
+				limit_page_length: 1
+			},
+			callback: function(r) {
+				var price = r.message && r.message.length ? parseFloat(r.message[0].price_list_rate) || 0 : 0;
+				if (price > 0) {
+					done(price);
+					return;
+				}
+
+				frappe.call({
+					method: 'frappe.client.get_value',
+					args: {
+						doctype: 'Item',
+						filters: { name: item },
+						fieldname: ['standard_rate', 'valuation_rate', 'last_purchase_rate']
+					},
+					callback: function(item_response) {
+						var row = item_response.message || {};
+						var fallback = parseFloat(row.standard_rate) || parseFloat(row.valuation_rate) || parseFloat(row.last_purchase_rate) || 0;
+						done(fallback);
+					}
+				});
+			}
+		});
+	}
 
 function load_items_options() {
 	frappe.call({
@@ -1309,7 +1663,7 @@ function load_items_options() {
 					
 					r.message.forEach(function(item) {
 						var selected = item.name === current_val ? 'selected' : '';
-						$select.append(`<option value="${item.name}" ${selected}>${item.item_name || item.name}</option>`);
+							$select.append(`<option value="${esc_attr(item.name)}" ${selected}>${esc(item.item_name || item.name)}</option>`);
 					});
 				});
 			}
@@ -1322,8 +1676,8 @@ function load_brands_list(selected_brand) {
 	frappe.call({
 		method: 'frappe.client.get_list',
 		args: {
-			doctype: 'Brand',
-			fields: ['name'],
+				doctype: 'Maintenance Device Brand',
+				fields: ['name', 'brand_name'],
 			limit_page_length: 0,
 			order_by: 'name asc'
 		},
@@ -1334,8 +1688,9 @@ function load_brands_list(selected_brand) {
 				let $select = $('#mr_brand');
 				$select.find('option:not(:first)').remove();
 				r.message.forEach(function(item) {
+					let label = item.brand_name || item.name;
 					let sel = selected_brand && selected_brand === item.name ? 'selected' : '';
-					$select.append(`<option value="${item.name}" ${sel}>${item.name}</option>`);
+					$select.append(`<option value="${esc_attr(item.name)}" ${sel}>${esc(label)}</option>`);
 				});
 				if (selected_brand) {
 					$select.val(selected_brand);
@@ -1345,7 +1700,7 @@ function load_brands_list(selected_brand) {
 				if ($wrapper.length && $wrapper.data('sd-update')) {
 					var new_opts = [{value: '', label: __('Select')}];
 					r.message.forEach(function(item) {
-						new_opts.push({value: item.name, label: item.name});
+						new_opts.push({value: item.name, label: item.brand_name || item.name});
 					});
 					$wrapper.data('sd-update')(new_opts, selected_brand || $select.val());
 				}
@@ -1369,7 +1724,7 @@ function show_add_brand_dialog() {
 				method: 'frappe.client.insert',
 				args: {
 					doc: {
-						doctype: 'Brand',
+							doctype: 'Maintenance Device Brand',
 						brand_name: values.brand_name
 					}
 				},
@@ -1430,9 +1785,9 @@ function show_add_device_type_dialog() {
 							indicator: 'green'
 						});
 						// Add new option to select and set it
-						$('#mr_device_type').append(
-							`<option value="${r.message.name}" selected>${r.message.name}</option>`
-						);
+							$('#mr_device_type').append(
+								`<option value="${esc_attr(r.message.name)}" selected>${esc(r.message.name)}</option>`
+							);
 						$('#mr_device_type').val(r.message.name);
 					}
 				},
@@ -1490,9 +1845,9 @@ function show_add_customer_dialog() {
 						});
 						// Add new option to select and set it
 						var display = r.message.customer_name || r.message.name;
-						$('#mr_customer').append(
-							`<option value="${r.message.name}" selected>${display}</option>`
-						);
+							$('#mr_customer').append(
+								`<option value="${esc_attr(r.message.name)}" selected>${esc(display)}</option>`
+							);
 						$('#mr_customer').val(r.message.name);
 						// Set phone if provided
 						if (values.phone_number) {
@@ -1523,28 +1878,42 @@ function update_totals() {
 	$('#due_display').text(fmt(due));
 }
 
-function load_select_options(data) {
-	// Load customers with phone numbers for search
-	frappe.call({
-		method: 'maintenance_request.maintenance_request.page.maintenance_dashboard.maintenance_dashboard.get_customer_options',
-		async: false,
-		callback: function(r) {
-			if (r.message) {
-				let $select = $('#mr_customer');
-				r.message.forEach(function(item) {
-					let selected = data && data.customer === item.name ? 'selected' : '';
-					let display = item.customer_name || item.name;
-					var $opt = $('<option></option>').val(item.name).text(display).attr('selected', selected ? true : false);
-					if (item.phones && item.phones.length) {
-						$opt.attr('data-phones', item.phones.join(','));
+	function load_select_options(data) {
+		let $customer_select = $('#mr_customer');
+		if (data && data.customer) {
+			$customer_select.append(
+				$('<option></option>')
+					.val(data.customer)
+					.text(data.customer_name || data.customer)
+					.attr('selected', true)
+			);
+		} else {
+			// New requests can load customers in the background; editing a request
+			// should not block on thousands of customer rows.
+			frappe.call({
+				method: 'maintenance_request.maintenance_request.page.maintenance_dashboard.maintenance_dashboard.get_customer_options',
+				callback: function(r) {
+					if (r.message) {
+						var customer_options = [{value: '', label: __('Select')}];
+						r.message.forEach(function(item) {
+							let display = item.customer_name || item.name;
+							var $opt = $('<option></option>').val(item.name).text(display);
+							if (item.phones && item.phones.length) {
+								$opt.attr('data-phones', item.phones.join(','));
+							}
+							$customer_select.append($opt);
+							customer_options.push({value: item.name, label: display, phones: (item.phones || []).join(',')});
+						});
+						var $wrapper = $customer_select.next('.searchable-dropdown');
+						if ($wrapper.length && $wrapper.data('sd-update')) {
+							$wrapper.data('sd-update')(customer_options, $customer_select.val());
+						}
 					}
-					$select.append($opt);
-				});
-			}
+				}
+			});
 		}
-	});
 
-	frappe.call({
+		frappe.call({
 		method: 'frappe.client.get_list',
 		args: { doctype: 'Branch', limit_page_length: 0, fields: ['name'], order_by: 'name asc' },
 		async: false,
@@ -1553,7 +1922,7 @@ function load_select_options(data) {
 				let $select = $('#mr_branch');
 				r.message.forEach(function(item) {
 					let selected = data && data.branch === item.name ? 'selected' : '';
-					$select.append(`<option value="${item.name}" ${selected}>${item.name}</option>`);
+						$select.append(`<option value="${esc_attr(item.name)}" ${selected}>${esc(item.name)}</option>`);
 				});
 			}
 		}
@@ -1568,7 +1937,7 @@ function load_select_options(data) {
 				let $select = $('#mr_device_type');
 				r.message.forEach(function(item) {
 					let selected = data && data.device_type === item.name ? 'selected' : '';
-					$select.append(`<option value="${item.name}" ${selected}>${item.name}</option>`);
+						$select.append(`<option value="${esc_attr(item.name)}" ${selected}>${esc(item.name)}</option>`);
 				});
 			}
 		}
@@ -1590,7 +1959,7 @@ function load_select_options(data) {
 				r.message.forEach(function(item) {
 					let selected = data && data.technician === item.name ? 'selected' : '';
 					let display = item.full_name || item.name;
-					$select.append(`<option value="${item.name}" ${selected}>${display}</option>`);
+						$select.append(`<option value="${esc_attr(item.name)}" ${selected}>${esc(display)}</option>`);
 				});
 			}
 		}
@@ -1743,7 +2112,7 @@ function render_status_buttons(current_status, request_name) {
 	var html = '';
 	next_statuses.forEach(function(status) {
 		var cls = btn_colors[status] || 'btn-secondary';
-		html += `<button class="btn ${cls} btn-sm status-change-btn" data-status="${status}" data-name="${request_name}">${__(status)}</button>`;
+		html += `<button class="btn ${cls} btn-sm status-change-btn" data-status="${esc_attr(status)}" data-name="${esc_attr(request_name)}">${esc(__(status))}</button>`;
 	});
 	return html;
 }
@@ -1848,11 +2217,11 @@ function make_searchable(selector, opts) {
 
 	$wrapper.html(`
 		<div class="sd-display" tabindex="0">
-			<span class="${display_class}">${display_text}</span>
+				<span class="${display_class}">${esc(display_text)}</span>
 			<span class="sd-arrow">&#9662;</span>
 		</div>
 		<div class="sd-panel">
-			<div class="sd-search"><input type="text" placeholder="${__('Search...')}"></div>
+				<div class="sd-search"><input type="text" placeholder="${esc_attr(__('Search...'))}"></div>
 			<div class="sd-options"></div>
 		</div>
 	`);
@@ -1886,9 +2255,9 @@ function make_searchable(selector, opts) {
 				o.phones.split(',').forEach(function(p) {
 					if (p.indexOf(filter_text) >= 0 && !matched_phone) matched_phone = p;
 				});
-				if (matched_phone) phone_hint = ' <small style="color:#888">(' + matched_phone + ')</small>';
-			}
-			html += '<div class="sd-option' + sel_cls + '" data-value="' + o.value + '">' + o.label + phone_hint + '</div>';
+					if (matched_phone) phone_hint = ' <span class="sd-option-phone">(' + esc(matched_phone) + ')</span>';
+				}
+				html += '<div class="sd-option' + sel_cls + '" data-value="' + esc_attr(o.value) + '">' + esc(o.label) + phone_hint + '</div>';
 			count++;
 		});
 		if (count === 0) {
@@ -1899,15 +2268,22 @@ function make_searchable(selector, opts) {
 
 	function open_panel() {
 		if ($wrapper.hasClass('disabled')) return;
-		$panel.addClass('open');
+		$panel.removeClass('open-up').addClass('open');
 		$display.addClass('focused');
 		$search_input.val('');
 		render_options('');
+		var display_rect = $display[0].getBoundingClientRect();
+		var footer_top = $('.mr-dialog .dialog-footer')[0]?.getBoundingClientRect().top || window.innerHeight;
+		var available_below = Math.min(window.innerHeight, footer_top) - display_rect.bottom - 12;
+		var available_above = display_rect.top - 12;
+		if (available_below < 230 && available_above > available_below) {
+			$panel.addClass('open-up');
+		}
 		setTimeout(function() { $search_input.focus(); }, 50);
 	}
 
 	function close_panel() {
-		$panel.removeClass('open');
+		$panel.removeClass('open open-up');
 		$display.removeClass('focused');
 	}
 
@@ -1941,15 +2317,19 @@ function make_searchable(selector, opts) {
 		render_options($(this).val());
 	});
 
-	$search_input.on('click', function(e) {
+	$search_input.on('click mousedown mouseup keydown keyup keypress', function(e) {
 		e.stopPropagation();
 	});
 
-	$options_container.on('click', '.sd-option', function(e) {
-		e.stopPropagation();
-		select_value($(this).data('value'));
-		if (opts.onChange) opts.onChange($(this).data('value'));
+	$search_input.on('mousedown', function() {
+		var input = this;
+		setTimeout(function() { input.focus(); }, 0);
 	});
+
+		$options_container.on('click', '.sd-option', function(e) {
+			e.stopPropagation();
+			select_value($(this).attr('data-value'));
+		});
 
 	// Close panel on outside click
 	var sd_ns = 'click.sd_' + ($select.attr('id') || 'svc_' + Math.random().toString(36).substr(2, 6));
@@ -2015,5 +2395,5 @@ function update_searchable_disabled() {
 }
 
 function fmt(v) {
-	return (parseFloat(v) || 0).toLocaleString('en-SA', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' SAR';
+	return (parseFloat(v) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' SAR';
 }
