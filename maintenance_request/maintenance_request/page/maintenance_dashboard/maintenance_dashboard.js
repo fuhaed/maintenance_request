@@ -2626,7 +2626,8 @@ function print_thermal_sticker(docname) {
 }
 
 function render_and_print_thermal_label(d) {
-	var barcode_svg = generate_barcode_svg(d.name, 40);
+	var barcode_val = get_request_barcode_value(d.name);
+	var barcode_svg = code39_svg(barcode_val);
 	var win = window.open('', '_blank', 'width=450,height=350');
 	if (!win) {
 		frappe.msgprint(__('Please allow popups to print thermal labels.'));
