@@ -32,6 +32,18 @@ class MaintenanceRequest(Document):
 		self.calculate_totals()
 		self.calculate_warranty_end_date()
 
+	def on_update(self):
+		old_doc = self.get_doc_before_save()
+		old_status = old_doc.status if old_doc else None
+		if not old_status or old_status != self.status:
+			self._try_send_auto_whatsapp(old_status, self.status)
+
+	def _try_send_auto_whatsapp(self, old_status, new_status):
+		try:
+			send_status_whatsapp_notification(self, old_status, new_status)
+		except Exception as e:
+			frappe.log_error(title=f"Maintenance WhatsApp Error ({self.name})", message=str(e))
+
 	def validate(self):
 		self._sync_status_with_inspection()
 		self.validate_new_request_status()
@@ -425,3 +437,298 @@ def create_sales_invoice(maintenance_request):
 	mr.db_set("sales_invoice", si.name)
 
 	return si.name
+
+
+# ── WhatsApp Notification Helpers ─────────────────────────────────────
+
+def clean_phone_for_whatsapp(phone):
+	"""Clean and normalize phone number for WhatsApp (Saudi/International)."""
+	if not phone:
+		return ""
+	digits = "".join([c for c in str(phone) if c.isdigit()])
+	if not digits:
+		return ""
+	# Saudi numbers: 05XXXXXXXX -> 9665XXXXXXXX
+	if digits.startswith("05") and len(digits) == 10:
+		return "966" + digits[1:]
+	if digits.startswith("5") and len(digits) == 9:
+		return "966" + digits
+	if digits.startswith("00"):
+		return digits[2:]
+	return digits
+
+
+def build_whatsapp_message(doc, status=None):
+	"""Build contextual Arabic message for customer based on request status."""
+	if isinstance(doc, str):
+		doc = frappe.get_doc("Maintenance Request", doc)
+
+	cur_status = status or doc.status
+	customer_name = doc.customer_name or frappe.db.get_value("Customer", doc.customer, "customer_name") or doc.customer or "العميل الكريم"
+	device_info = f"{doc.device_type or ''} {doc.brand or ''} {doc.model or ''}".strip() or "الجهاز"
+	company_name = doc.company or frappe.defaults.get_user_default("company") or "مركز الصيانة"
+
+	if cur_status == "Pending":
+		return (
+			f"مرحباً بك {customer_name} 🌸\n"
+			f"تم استلام جهازكم بنجاح في *{company_name}*.\n\n"
+			f"📋 *رقم طلب الصيانة:* {doc.name}\n"
+			f"📱 *الجهاز:* {device_info}\n"
+			f"⚙️ *المشكلة المسجلة:* {doc.problem_description or 'فحص وصيانة'}\n"
+			f"📅 *تاريخ الاستلام:* {doc.received_date or today()}\n\n"
+			f"سيتم إشعاركم فور الانتهاء من الفحص أو الصيانة. شكراً لثقتكم بنا! ✨"
+		)
+	elif cur_status == "In Progress":
+		cost_info = f"\n💰 *التكلفة المقدرة:* {flt(doc.estimated_cost):,.2f} SAR" if flt(doc.estimated_cost) > 0 else ""
+		diag = f"\n🔍 *التشخيص:* {doc.diagnosis}" if doc.diagnosis else ""
+		return (
+			f"مرحباً {customer_name} 🌸\n"
+			f"إشعار من *{company_name}* بخصوص طلب الصيانة رقم *{doc.name}*.\n"
+			f"الجهاز الآن *قيد التنفيذ / الصيانة* 🛠️\n"
+			f"📱 *الجهاز:* {device_info}{diag}{cost_info}\n\n"
+			f"سنوافيكم بتأكيد الجاهزية فور اكتمال العمل. شكراً لصبركم!"
+		)
+	elif cur_status == "Ready for Delivery":
+		outstanding = flt(doc.outstanding_amount)
+		pay_text = f"💰 *المبلغ المتبقي للسداد:* {outstanding:,.2f} SAR\n" if outstanding > 0 else "✅ *الحساب مدفوع بالكامل.*\n"
+		return (
+			f"مرحباً {customer_name} 🎉\n"
+			f"يسرنا إبلاغكم بأن جهازكم *جاهز للاستلام* في *{company_name}*!\n\n"
+			f"📋 *رقم الطلب:* {doc.name}\n"
+			f"📱 *الجهاز:* {device_info}\n"
+			f"{pay_text}\n"
+			f"نتشرف بزيارتكم في الفرع لاستلام الجهاز. أهلاً وسهلاً بكم! 🌸"
+		)
+	elif cur_status == "Delivered":
+		w_text = f"\n🛡️ *فترة الضمان:* {doc.warranty_days} يوم (حتى {doc.warranty_end_date})" if doc.warranty_days else ""
+		return (
+			f"مرحباً {customer_name} 🌸\n"
+			f"تم تسليم جهازكم بنجاح (طلب رقم: *{doc.name}*).\n"
+			f"📱 *الجهاز:* {device_info}{w_text}\n\n"
+			f"سعدنا بخدمتكم في *{company_name}* ونتمنى لكم تجربة ممتازة! ✨"
+		)
+	elif cur_status == "Not Repairable":
+		reason = f"\n⚠️ *السبب:* {doc.not_repairable_reason}" if doc.not_repairable_reason else ""
+		return (
+			f"مرحباً {customer_name}\n"
+			f"إفادة بخصوص طلب الصيانة رقم *{doc.name}* (جهاز: {device_info}).\n"
+			f"بعد الفحص الفني، تعذر إتمام الإصلاح.{reason}\n\n"
+			f"يرجى مراجعة الفرع لاستلام جهازكم. نعتذر لعدم تمكننا من خدمتكم هذه المرة."
+		)
+	else:
+		return (
+			f"مرحباً {customer_name}\n"
+			f"تحديث بخصوص طلب الصيانة رقم *{doc.name}* ({device_info}):\n"
+			f"الحالة الحالية: *{cur_status}*.\n"
+			f"*{company_name}*"
+		)
+
+
+def send_status_whatsapp_notification(doc, old_status, new_status):
+	"""Attempt sending automated WhatsApp via frappe_whatsapp safely."""
+	# Only notify on meaningful transitions
+	if new_status not in ["Pending", "In Progress", "Ready for Delivery", "Delivered", "Not Repairable"]:
+		return
+
+	phone = doc.phone_number
+	if not phone and doc.customer:
+		c_info = get_customer_contact_info(doc.customer)
+		phone = c_info.get("phone")
+
+	clean_phone = clean_phone_for_whatsapp(phone)
+	if not clean_phone:
+		return
+
+	# Check if frappe_whatsapp app is installed and configured
+	if "frappe_whatsapp" not in frappe.get_installed_apps():
+		return
+
+	# Check for active WhatsApp account
+	try:
+		if not frappe.db.table_exists("WhatsApp Account"):
+			return
+
+		accounts = frappe.get_all(
+			"WhatsApp Account",
+			filters={"status": "Active"},
+			limit=1
+		)
+		if not accounts:
+			return
+
+		msg_text = build_whatsapp_message(doc, new_status)
+
+		# Try sending via frappe_whatsapp if available
+		if hasattr(frappe.get_module("frappe_whatsapp"), "send_message"):
+			frappe.get_module("frappe_whatsapp").send_message(
+				recipient=clean_phone,
+				message=msg_text,
+				reference_doctype="Maintenance Request",
+				reference_name=doc.name
+			)
+	except Exception as e:
+		# Gracefully log and proceed without blocking the user
+		frappe.log_error(title=f"Auto WhatsApp send failed for {doc.name}", message=str(e))
+
+
+@frappe.whitelist()
+def get_whatsapp_share_data(docname, status=None):
+	"""Return WhatsApp share payload (URL and text) for manual one-click sending."""
+	if not _has_maintenance_role():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	doc = frappe.get_doc("Maintenance Request", docname)
+	phone = doc.phone_number
+	if not phone and doc.customer:
+		c_info = get_customer_contact_info(doc.customer)
+		phone = c_info.get("phone")
+
+	clean_phone = clean_phone_for_whatsapp(phone)
+	msg_text = build_whatsapp_message(doc, status)
+
+	import urllib.parse
+	encoded_text = urllib.parse.quote(msg_text)
+	wa_url = f"https://wa.me/{clean_phone}?text={encoded_text}" if clean_phone else f"https://wa.me/?text={encoded_text}"
+
+	return {
+		"phone": phone or "",
+		"clean_phone": clean_phone or "",
+		"message": msg_text,
+		"wa_url": wa_url,
+		"has_whatsapp_installed": "frappe_whatsapp" in frappe.get_installed_apps()
+	}
+
+
+# ── Device History & Warranty Checking ─────────────────────────────────
+
+@frappe.whitelist()
+def check_device_and_customer_history(serial_number=None, customer=None, phone_number=None, exclude_name=None):
+	"""Check prior maintenance history and active warranty for device or customer."""
+	if not _has_maintenance_role():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	today_date = getdate(today())
+	device_records = []
+	customer_records = []
+	has_active_warranty = False
+	active_warranty_details = None
+
+	# 1. Search by Serial / IMEI Number
+	if serial_number and str(serial_number).strip():
+		s_clean = str(serial_number).strip()
+		query = """
+			SELECT
+				name, status, received_date, device_type, brand, model, serial_number,
+				problem_description, diagnosis, actual_delivery_date, warranty_days, warranty_end_date,
+				estimated_cost, total_amount, customer
+			FROM `tabMaintenance Request`
+			WHERE serial_number = %s
+		"""
+		params = [s_clean]
+		if exclude_name:
+			query += " AND name != %s"
+			params.append(exclude_name)
+		query += " ORDER BY creation DESC LIMIT 10"
+
+		rows = frappe.db.sql(query, tuple(params), as_dict=True)
+		for r in rows:
+			w_end = getdate(r.warranty_end_date) if r.warranty_end_date else None
+			is_active_w = bool(w_end and w_end >= today_date and r.status == "Delivered")
+			days_left = (w_end - today_date).days if is_active_w else 0
+
+			item = {
+				"name": r.name,
+				"status": r.status,
+				"received_date": str(r.received_date or ""),
+				"device_type": r.device_type or "",
+				"brand": r.brand or "",
+				"model": r.model or "",
+				"serial_number": r.serial_number or "",
+				"problem": r.problem_description or "",
+				"diagnosis": r.diagnosis or "",
+				"delivered_date": str(r.actual_delivery_date or ""),
+				"warranty_days": r.warranty_days or 0,
+				"warranty_end_date": str(r.warranty_end_date or ""),
+				"is_under_warranty": is_active_w,
+				"warranty_days_left": days_left,
+				"total_amount": flt(r.total_amount)
+			}
+			device_records.append(item)
+
+			if is_active_w and not has_active_warranty:
+				has_active_warranty = True
+				active_warranty_details = item
+
+	# 2. Search recent requests by Customer or Phone
+	if customer or phone_number:
+		filters = []
+		if customer:
+			filters.append("customer = %(cust)s")
+		if phone_number:
+			filters.append("phone_number = %(phone)s")
+
+		where_clause = " OR ".join(filters)
+		params = {"cust": customer or "", "phone": phone_number or ""}
+		if exclude_name:
+			where_clause = f"({where_clause}) AND name != %(exclude)s"
+			params["exclude"] = exclude_name
+
+		c_query = f"""
+			SELECT
+				name, status, received_date, device_type, brand, model, serial_number,
+				problem_description, actual_delivery_date, warranty_days, warranty_end_date
+			FROM `tabMaintenance Request`
+			WHERE {where_clause}
+			ORDER BY creation DESC LIMIT 5
+		"""
+		c_rows = frappe.db.sql(c_query, params, as_dict=True)
+		for cr in c_rows:
+			w_end = getdate(cr.warranty_end_date) if cr.warranty_end_date else None
+			is_active_w = bool(w_end and w_end >= today_date and cr.status == "Delivered")
+			customer_records.append({
+				"name": cr.name,
+				"status": cr.status,
+				"received_date": str(cr.received_date or ""),
+				"device": f"{cr.device_type or ''} {cr.brand or ''} {cr.model or ''}".strip(),
+				"serial_number": cr.serial_number or "",
+				"problem": cr.problem_description or "",
+				"is_under_warranty": is_active_w,
+				"warranty_end_date": str(cr.warranty_end_date or "")
+			})
+
+	return {
+		"device_history": device_records,
+		"customer_history": customer_records,
+		"has_active_warranty": has_active_warranty,
+		"active_warranty_details": active_warranty_details
+	}
+
+
+# ── Thermal Sticker Print Data ────────────────────────────────────────
+
+@frappe.whitelist()
+def get_sticker_print_data(docname):
+	"""Get formatted payload for thermal label / barcode sticker printing (50x30mm)."""
+	if not _has_maintenance_role():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	doc = frappe.get_doc("Maintenance Request", docname)
+	customer_name = doc.customer_name or frappe.db.get_value("Customer", doc.customer, "customer_name") or doc.customer or ""
+	company_name = doc.company or frappe.defaults.get_user_default("company") or "Maintenance"
+
+	return {
+		"name": doc.name,
+		"customer_name": customer_name,
+		"phone": doc.phone_number or "",
+		"device": f"{doc.device_type or ''} {doc.brand or ''} {doc.model or ''}".strip(),
+		"device_type": doc.device_type or "",
+		"brand": doc.brand or "",
+		"model": doc.model or "",
+		"serial_number": doc.serial_number or "",
+		"problem": (doc.problem_description or "")[:80],
+		"received_date": str(doc.received_date or today()),
+		"branch": doc.branch or "",
+		"company": company_name,
+		"estimated_cost": flt(doc.estimated_cost),
+		"advance_paid": flt(doc.advance_paid)
+	}

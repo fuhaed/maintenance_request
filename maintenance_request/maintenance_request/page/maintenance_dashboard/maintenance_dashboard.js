@@ -289,6 +289,14 @@ function update_dashboard_partial(data) {
 		e.stopPropagation();
 		show_request_dialog($(this).data('name'));
 	});
+	$('.btn-row-whatsapp').on('click', function(e) {
+		e.stopPropagation();
+		open_whatsapp_share_dialog($(this).data('name'));
+	});
+	$('.btn-row-label').on('click', function(e) {
+		e.stopPropagation();
+		print_thermal_sticker($(this).data('name'));
+	});
 	$('.page-btn, .page-nav-btn').on('click', function() {
 		if ($(this).prop('disabled')) return;
 		var pg = parseInt($(this).data('page'));
@@ -489,7 +497,17 @@ function render_table_rows(requests) {
 				<td class="est-cost">${fmt(req.estimated_cost)}</td>
 				<td>${req.received_date ? latin_digits(frappe.datetime.str_to_user(req.received_date)) : ''}</td>
 				<td><span class="status-badge ${colors[req.status] || 'gray'}">${esc(__(req.status || 'Pending'))}</span></td>
-				<td><button class="btn-view" data-name="${esc_attr(req.name)}">${__('View')}</button></td>
+				<td>
+					<div class="action-cell">
+						<button class="btn-view" data-name="${esc_attr(req.name)}" title="${__('View / Edit')}">${__('View')}</button>
+						<button class="btn-row-whatsapp" data-name="${esc_attr(req.name)}" title="${__('WhatsApp')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+						</button>
+						<button class="btn-row-label" data-name="${esc_attr(req.name)}" title="${__('Device Label')}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="12"/><line x1="10" y1="8" x2="10" y2="12"/><line x1="14" y1="8" x2="14" y2="12"/><line x1="17" y1="8" x2="17" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
+						</button>
+					</div>
+				</td>
 			</tr>
 		`;
 	});
@@ -543,6 +561,16 @@ function bind_events() {
 	$('.btn-view').on('click', function(e) {
 		e.stopPropagation();
 		show_request_dialog($(this).data('name'));
+	});
+
+	$('.btn-row-whatsapp').on('click', function(e) {
+		e.stopPropagation();
+		open_whatsapp_share_dialog($(this).data('name'));
+	});
+
+	$('.btn-row-label').on('click', function(e) {
+		e.stopPropagation();
+		print_thermal_sticker($(this).data('name'));
 	});
 
 	// Pagination buttons
@@ -1119,6 +1147,7 @@ function show_request_dialog(request_name = null) {
 					<div class="wizard-step-content">
 						<!-- STEP 1: Intake -->
 						<div class="wizard-step-panel active" data-step="intake">
+							<div id="mr_history_banner_container"></div>
 							<div class="row">
 								<div class="field">
 									<label>${__('Customer')} <span class="req">*</span></label>
@@ -1300,6 +1329,7 @@ function show_request_dialog(request_name = null) {
 						${is_edit ? `
 									<button class="btn btn-info" id="print_btn" data-name="${esc_attr(data.name)}">${__('Print')}</button>
 									<button class="btn btn-warning" id="label_btn" data-name="${esc_attr(data.name)}">${__('Device Label')}</button>
+									<button class="btn btn-whatsapp" id="whatsapp_btn" data-name="${esc_attr(data.name)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> ${__('WhatsApp')}</button>
 									${!data.sales_invoice && !is_not_repairable_locked ? `<button class="btn btn-success" id="invoice_btn" data-name="${esc_attr(data.name)}">${__('Invoice')}</button>` : ''}
 									${!is_not_repairable_locked ? render_status_buttons(data.status, data.name) : ''}
 						` : ''}
@@ -1398,7 +1428,7 @@ function show_request_dialog(request_name = null) {
 		show_add_customer_dialog();
 	});
 
-	// Customer change - always fetch and fill phone
+	// Customer change - always fetch and fill phone & check history
 	$('#mr_customer').on('change', function() {
 		var customer = $(this).val();
 		if (customer) {
@@ -1414,10 +1444,25 @@ function show_request_dialog(request_name = null) {
 							$('#mr_secondary_phone').val(r.message.secondary_phone);
 						}
 					}
+					trigger_history_and_warranty_check(data ? data.name : null);
 				}
 			});
+		} else {
+			trigger_history_and_warranty_check(data ? data.name : null);
 		}
 	});
+
+	// Serial number change/blur - check history and warranty
+	$('#mr_serial_number').on('blur change', function() {
+		trigger_history_and_warranty_check(data ? data.name : null);
+	});
+
+	// Initial history check if editing or customer/serial present
+	if (is_edit && (data.serial_number || data.customer || data.phone_number)) {
+		setTimeout(function() {
+			trigger_history_and_warranty_check(data.name);
+		}, 300);
+	}
 
 	// Inspection decision change - toggle fields
 	$('#mr_inspection_decision').on('change', function() {
@@ -1474,7 +1519,11 @@ function show_request_dialog(request_name = null) {
 		});
 
 		$('#label_btn').on('click', function() {
-			print_device_label(is_edit ? data : null);
+			print_thermal_sticker(data ? data.name : null);
+		});
+
+		$('#whatsapp_btn').on('click', function() {
+			open_whatsapp_share_dialog(data ? data.name : null);
 		});
 
 	$('#invoice_btn').on('click', function() {
@@ -2396,4 +2445,308 @@ function update_searchable_disabled() {
 
 function fmt(v) {
 	return (parseFloat(v) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' SAR';
+}
+
+// =====================================================================
+// LIVE DEVICE HISTORY & WARRANTY CHECKER
+// =====================================================================
+function trigger_history_and_warranty_check(exclude_name) {
+	var serial = $('#mr_serial_number').val() || '';
+	var customer = $('#mr_customer').val() || '';
+	var phone = $('#mr_phone_number').val() || '';
+
+	if (!serial && !customer && !phone) {
+		$('#mr_history_banner_container').empty();
+		return;
+	}
+
+	frappe.call({
+		method: 'maintenance_request.maintenance_request.doctype.maintenance_request.maintenance_request.check_device_and_customer_history',
+		args: {
+			serial_number: serial,
+			customer: customer,
+			phone_number: phone,
+			exclude_name: exclude_name || $('#mr_name').val() || ''
+		},
+		callback: function(r) {
+			if (r && r.message) {
+				render_history_and_warranty_banner(r.message);
+			}
+		}
+	});
+}
+
+function render_history_and_warranty_banner(data) {
+	var $container = $('#mr_history_banner_container');
+	$container.empty();
+
+	if (!data.has_active_warranty && (!data.device_history || data.device_history.length === 0) && (!data.customer_history || data.customer_history.length === 0)) {
+		return;
+	}
+
+	var html = '';
+
+	if (data.has_active_warranty && data.active_warranty_details) {
+		var w = data.active_warranty_details;
+		html += `
+			<div class="warranty-banner active-warranty">
+				<div style="font-size:20px;line-height:1">🛡️</div>
+				<div style="flex:1">
+					<div style="font-weight:800;font-size:14px">${__('Active Warranty Found!')}</div>
+					<div>${__('This device has an active warranty from previous request {0}', [`<strong>${esc(w.name)}</strong>`])}. ${__('Remaining')}: <strong>${esc(w.warranty_days_left)} ${__('Days')}</strong> (${__('Ends at')} ${esc(w.warranty_end_date)}).</div>
+					<div style="font-size:11px;margin-top:4px;color:#047857">${__('Previous Problem')}: ${esc(w.problem)}</div>
+				</div>
+			</div>
+		`;
+	} else if (data.device_history && data.device_history.length > 0) {
+		var first = data.device_history[0];
+		html += `
+			<div class="warranty-banner info">
+				<div style="font-size:18px;line-height:1">ℹ️</div>
+				<div style="flex:1">
+					<div style="font-weight:700">${__('Device Maintenance History')} (${data.device_history.length} ${__('Previous Requests')})</div>
+					<div style="font-size:12px">${__('Last request {0} on {1} - Status: {2}', [`<strong>${esc(first.name)}</strong>`, esc(first.received_date), `<strong>${esc(__(first.status))}</strong>`])}</div>
+					<div class="history-records-list">
+						${data.device_history.slice(0, 3).map(function(item) {
+							return `<div class="history-record-item"><span>📋 ${esc(item.name)} (${esc(item.received_date)}) - ${esc(item.problem)}</span><span class="badge" style="background:#e0e7ff;color:#3730a3">${esc(__(item.status))}</span></div>`;
+						}).join('')}
+					</div>
+				</div>
+			</div>
+		`;
+	}
+
+	$container.html(html);
+}
+
+
+// =====================================================================
+// WHATSAPP SHARE & AUTOMATION MODAL
+// =====================================================================
+function open_whatsapp_share_dialog(docname) {
+	if (!docname) return;
+
+	frappe.call({
+		method: 'maintenance_request.maintenance_request.doctype.maintenance_request.maintenance_request.get_whatsapp_share_data',
+		args: { docname: docname },
+		freeze: true,
+		freeze_message: __('Loading WhatsApp Details...'),
+		callback: function(r) {
+			if (r && r.message) {
+				show_whatsapp_modal(docname, r.message);
+			}
+		}
+	});
+}
+
+function show_whatsapp_modal(docname, data) {
+	$('.mr-whatsapp-dialog').remove();
+
+	var html = `
+		<div class="mr-dialog mr-whatsapp-dialog" style="z-index:1060">
+			<div class="dialog-box" style="max-width:550px">
+				<div class="dialog-header" style="background:#128c7e">
+					<h5 class="dialog-title">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+						${__('Send WhatsApp Notification')} - <span class="badge">${esc(docname)}</span>
+					</h5>
+					<button class="close-btn" id="wa_close_btn">&times;</button>
+				</div>
+				<div class="dialog-body" style="background:#fff;padding:18px">
+					<div class="field" style="margin-bottom:12px">
+						<label style="font-weight:700;font-size:12px;color:#374151">${__('Recipient Phone')}</label>
+						<input type="text" id="wa_phone_input" value="${esc_attr(data.phone || '')}" placeholder="05XXXXXXXX / 9665XXXXXXXX" style="direction:ltr;font-weight:700;padding:9px;border:1px solid #d1d5db;border-radius:5px;width:100%">
+					</div>
+					<div class="field" style="margin-bottom:14px">
+						<label style="font-weight:700;font-size:12px;color:#374151">${__('Message Preview')}</label>
+						<textarea id="wa_message_input" style="min-height:160px;padding:10px;border:1px solid #d1d5db;border-radius:5px;width:100%;font-size:13px;line-height:1.6;background:#f9fafb">${esc(data.message || '')}</textarea>
+					</div>
+					<div style="font-size:11px;color:#6b7280;margin-bottom:10px">
+						💡 ${__('You can customize the message above before sending directly via WhatsApp Web/App.')}
+					</div>
+				</div>
+				<div class="dialog-footer" style="background:#f9fafb;justify-content:space-between;padding:12px 18px">
+					<button class="btn btn-light" id="wa_copy_btn">📋 ${__('Copy Text')}</button>
+					<div style="display:flex;gap:8px">
+						<button class="btn btn-secondary" id="wa_cancel_btn">${__('Close')}</button>
+						<button class="btn btn-whatsapp" id="wa_open_btn" style="background:#25d366;color:#fff;font-weight:700">
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+							${__('Open WhatsApp')}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	`;
+
+	$('body').append(html);
+
+	$('#wa_close_btn, #wa_cancel_btn').on('click', function() {
+		$('.mr-whatsapp-dialog').remove();
+	});
+
+	$('#wa_copy_btn').on('click', function() {
+		var text = $('#wa_message_input').val();
+		navigator.clipboard.writeText(text).then(function() {
+			frappe.show_alert({ message: __('Message copied to clipboard!'), indicator: 'green' });
+		});
+	});
+
+	$('#wa_open_btn').on('click', function() {
+		var raw_phone = $('#wa_phone_input').val().trim();
+		var digits = raw_phone.replace(/\D/g, '');
+		if (digits.startsWith('05') && digits.length === 10) digits = '966' + digits.substring(1);
+		if (digits.startsWith('5') && digits.length === 9) digits = '966' + digits;
+
+		var msg = $('#wa_message_input').val();
+		var url = 'https://wa.me/' + (digits || '') + '?text=' + encodeURIComponent(msg);
+		window.open(url, '_blank');
+		$('.mr-whatsapp-dialog').remove();
+	});
+}
+
+
+// =====================================================================
+// ENHANCED THERMAL BARCODE STICKER PRINT (50x30mm)
+// =====================================================================
+function print_thermal_sticker(docname) {
+	if (!docname) return;
+
+	frappe.call({
+		method: 'maintenance_request.maintenance_request.doctype.maintenance_request.maintenance_request.get_sticker_print_data',
+		args: { docname: docname },
+		freeze: true,
+		freeze_message: __('Preparing Sticker...'),
+		callback: function(r) {
+			if (r && r.message) {
+				render_and_print_thermal_label(r.message);
+			}
+		}
+	});
+}
+
+function render_and_print_thermal_label(d) {
+	var barcode_svg = generate_barcode_svg(d.name, 40);
+	var win = window.open('', '_blank', 'width=450,height=350');
+	if (!win) {
+		frappe.msgprint(__('Please allow popups to print thermal labels.'));
+		return;
+	}
+
+	var html = `
+		<!DOCTYPE html>
+		<html dir="rtl">
+		<head>
+			<meta charset="UTF-8">
+			<title>${esc(d.name)}</title>
+			<style>
+				@page { size: 50mm 30mm; margin: 0; }
+				* { box-sizing: border-box; margin: 0; padding: 0; }
+				html, body {
+					width: 50mm;
+					height: 30mm;
+					background: #fff;
+					color: #000;
+					font-family: Arial, Tahoma, sans-serif;
+					font-size: 8pt;
+					line-height: 1.15;
+					overflow: hidden;
+				}
+				.sticker {
+					width: 50mm;
+					height: 30mm;
+					padding: 1.5mm 2mm;
+					display: flex;
+					flex-direction: column;
+					justify-content: space-between;
+				}
+				.header-row {
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+					border-bottom: 0.3mm solid #000;
+					padding-bottom: 0.8mm;
+				}
+				.company-name { font-weight: 800; font-size: 7.5pt; }
+				.rec-date { font-size: 7pt; font-family: monospace; }
+				.main-info {
+					display: flex;
+					flex-direction: column;
+					gap: 0.6mm;
+					margin: 0.8mm 0;
+				}
+				.cust-row {
+					display: flex;
+					justify-content: space-between;
+					font-weight: 700;
+				}
+				.cust-name { font-size: 8pt; max-width: 28mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+				.cust-phone { font-size: 7.5pt; font-family: monospace; direction: ltr; }
+				.device-row {
+					font-size: 7.5pt;
+					font-weight: 700;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.problem-row {
+					font-size: 6.5pt;
+					color: #222;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.barcode-container {
+					display: flex;
+					flex-direction: column;
+					align-items: center;
+					justify-content: center;
+					padding-top: 0.5mm;
+					border-top: 0.3mm solid #000;
+				}
+				.barcode-svg {
+					width: 44mm;
+					height: 7.5mm;
+				}
+				.req-code {
+					font-size: 7pt;
+					font-weight: 800;
+					font-family: monospace;
+					letter-spacing: 0.5px;
+					direction: ltr;
+				}
+			</style>
+		</head>
+		<body>
+			<div class="sticker">
+				<div class="header-row">
+					<span class="company-name">${esc(d.company || 'Maintenance')}</span>
+					<span class="rec-date">${esc(d.received_date)}</span>
+				</div>
+				<div class="main-info">
+					<div class="cust-row">
+						<span class="cust-name">${esc(d.customer_name)}</span>
+						<span class="cust-phone">${esc(d.phone)}</span>
+					</div>
+					<div class="device-row">📱 ${esc(d.device)}</div>
+					<div class="problem-row">⚙️ ${esc(d.problem)}</div>
+				</div>
+				<div class="barcode-container">
+					${barcode_svg}
+					<span class="req-code">${esc(d.name)}</span>
+				</div>
+			</div>
+			<script>
+				window.onload = function() {
+					window.print();
+					setTimeout(function() { window.close(); }, 750);
+				};
+			</script>
+		</body>
+		</html>
+	`;
+
+	win.document.open();
+	win.document.write(html);
+	win.document.close();
 }
