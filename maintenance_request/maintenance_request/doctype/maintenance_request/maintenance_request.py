@@ -475,7 +475,7 @@ def build_whatsapp_message(doc, status=None):
 			f"📋 *رقم طلب الصيانة:* {doc.name}\n"
 			f"📱 *الجهاز:* {device_info}\n"
 			f"⚙️ *المشكلة المسجلة:* {doc.problem_description or 'فحص وصيانة'}\n"
-			f"📅 *تاريخ الاستلام:* {doc.received_date or today()}\n\n"
+			f"📅 *تاريخ ووقت الاستلام:* {doc.received_date or today()}{' - ' + str(doc.received_time)[:5] if doc.get('received_time') else ''}\n\n"
 			f"سيتم إشعاركم فور الانتهاء من الفحص أو الصيانة. شكراً لثقتكم بنا! ✨"
 		)
 	elif cur_status == "In Progress":
@@ -716,6 +716,7 @@ def get_sticker_print_data(docname):
 	customer_name = doc.customer_name or frappe.db.get_value("Customer", doc.customer, "customer_name") or doc.customer or ""
 	company_name = doc.company or frappe.defaults.get_user_default("company") or "Maintenance"
 
+	time_str = f" {str(doc.received_time)[:5]}" if doc.get("received_time") else ""
 	return {
 		"name": doc.name,
 		"customer_name": customer_name,
@@ -727,6 +728,7 @@ def get_sticker_print_data(docname):
 		"serial_number": doc.serial_number or "",
 		"problem": (doc.problem_description or "")[:80],
 		"received_date": str(doc.received_date or today()),
+		"received_time": str(doc.received_time or ""),
 		"branch": doc.branch or "",
 		"company": company_name,
 		"estimated_cost": flt(doc.estimated_cost),

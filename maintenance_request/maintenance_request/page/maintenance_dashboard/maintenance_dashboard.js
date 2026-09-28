@@ -17,7 +17,7 @@ var search_timer = null;
 var STAGE_1_FIELDS = [
 	"mr_customer", "mr_phone_number", "mr_secondary_phone", "mr_device_type", "mr_brand",
 	"mr_model", "mr_serial_number", "mr_device_condition", "mr_problem_description",
-	"mr_expected_delivery_date", "mr_received_date", "mr_branch",
+	"mr_expected_delivery_date", "mr_received_date", "mr_received_time", "mr_branch",
 ];
 var STAGE_2_FIELDS = [
 	"mr_inspection_decision", "mr_technician", "mr_diagnosis", "mr_repair_notes", "mr_not_repairable_reason",
@@ -523,7 +523,7 @@ function render_table_rows(requests) {
 				<td>${esc(req.device_type)}${req.brand ? ' - ' + esc(req.brand) : ''}</td>
 				<td class="problem">${problem_text}</td>
 				<td class="est-cost">${fmt(req.estimated_cost)}</td>
-				<td>${req.received_date ? latin_digits(frappe.datetime.str_to_user(req.received_date)) : ''}</td>
+				<td>${req.received_date ? latin_digits(frappe.datetime.str_to_user(req.received_date)) + (req.received_time ? ' <small style="color:#64748b; font-size:11px;">' + esc(req.received_time.substring(0,5)) + '</small>' : '') : ''}</td>
 				<td><span class="status-badge ${colors[req.status] || 'gray'}">${esc(__(req.status || 'Pending'))}</span></td>
 				<td>
 					<div class="action-cell">
@@ -610,7 +610,7 @@ function bind_events() {
 		e.stopPropagation();
 		var name = $(this).data('name');
 		if (name) {
-			window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name), '_blank');
+			window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name) + '&format=Maintenance%20Receipt', '_blank');
 		}
 	});
 
@@ -1241,7 +1241,10 @@ function show_request_dialog(request_name = null) {
 								</div>
 								<div class="field">
 									<label>${__('Received')}</label>
-										<input type="date" id="mr_received_date" value="${is_edit ? esc_attr(data.received_date) : frappe.datetime.get_today()}">
+										<div style="display: flex; gap: 4px;">
+											<input type="date" id="mr_received_date" style="flex: 1.2; min-width: 0;" value="${is_edit ? esc_attr(data.received_date) : frappe.datetime.get_today()}">
+											<input type="time" id="mr_received_time" style="flex: 0.9; min-width: 0;" value="${is_edit ? esc_attr(data.received_time || '') : frappe.datetime.now_time().substring(0,5)}">
+										</div>
 								</div>
 								<div class="field">
 									<label>${__('Expected Delivery')} <span class="req">*</span></label>
@@ -1573,7 +1576,7 @@ function show_request_dialog(request_name = null) {
 		$('#print_btn').on('click', function() {
 			var name = $(this).data('name');
 			if (name) {
-				window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name), '_blank');
+				window.open('/printview?doctype=Maintenance%20Request&name=' + encodeURIComponent(name) + '&format=Maintenance%20Receipt', '_blank');
 			}
 		});
 
@@ -2468,6 +2471,7 @@ function get_form_data() {
 		model: $('#mr_model').val(),
 		serial_number: $('#mr_serial_number').val(),
 		received_date: $('#mr_received_date').val(),
+		received_time: $('#mr_received_time').val() || '',
 		expected_delivery_date: $('#mr_expected_delivery_date').val(),
 		status: $('#mr_status').val(),
 		technician: $('#mr_technician').val(),
@@ -3170,7 +3174,7 @@ function render_and_print_thermal_label(d) {
 			<div class="sticker">
 				<div class="header-row">
 					<span class="company-name">${esc(d.company || 'Maintenance')}</span>
-					<span class="rec-date">${esc(d.received_date)}</span>
+					<span class="rec-date">${esc(d.received_date)}${d.received_time ? ' ' + esc(d.received_time.substring(0,5)) : ''}</span>
 				</div>
 				<div class="main-info">
 					<div class="cust-row">

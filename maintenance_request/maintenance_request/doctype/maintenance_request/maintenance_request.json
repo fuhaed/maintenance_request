@@ -13,6 +13,7 @@
   "expected_delivery_date",
   "column_break_req1",
   "received_date",
+  "received_time",
   "branch",
   "company",
   "customer_section",
@@ -112,6 +113,12 @@
    "in_list_view": 1,
    "label": "Received Date",
    "reqd": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "received_time",
+   "fieldtype": "Time",
+   "label": "Received Time"
   },
   {
    "fieldname": "branch",

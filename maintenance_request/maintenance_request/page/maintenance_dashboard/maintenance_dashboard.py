@@ -15,7 +15,7 @@ SEARCH_FIELDS = ["name", "customer", "customer_name", "phone_number", "device_ty
 REQUEST_LIST_FIELDS = [
 	"name", "customer", "customer_name", "phone_number", "device_type",
 	"brand", "model", "problem_description", "status",
-	"received_date", "expected_delivery_date", "technician", "branch",
+	"received_date", "received_time", "expected_delivery_date", "technician", "branch",
 	"estimated_cost", "sales_invoice", "intake_receiver", "delivery_receiver",
 	"inspection_decision",
 ]
@@ -257,6 +257,7 @@ def get_request_details(request_name):
 		"delivery_receiver": doc.delivery_receiver,
 		"inspection_decision": doc.inspection_decision,
 		"received_date": str(doc.received_date) if doc.received_date else None,
+		"received_time": str(doc.received_time) if doc.received_time else None,
 		"expected_delivery_date": str(doc.expected_delivery_date) if doc.expected_delivery_date else None,
 		"actual_delivery_date": str(doc.actual_delivery_date) if doc.actual_delivery_date else None,
 		"estimated_cost": doc.estimated_cost or 0,
@@ -339,6 +340,7 @@ def create_request(data):
 	doc.branch = data.get("branch")
 	doc.company = frappe.defaults.get_user_default("Company")
 	doc.received_date = data.get("received_date") or today()
+	doc.received_time = data.get("received_time") or frappe.utils.nowtime()
 	doc.expected_delivery_date = data.get("expected_delivery_date") or None
 	doc.intake_receiver = data.get("intake_receiver") or frappe.utils.get_fullname(frappe.session.user)
 	doc.device_type = data.get("device_type")
@@ -376,6 +378,8 @@ def update_request(data):
 	doc.secondary_phone = data.get("secondary_phone")
 	doc.branch = data.get("branch")
 	doc.received_date = data.get("received_date") or None
+	if "received_time" in data:
+		doc.received_time = data.get("received_time") or None
 	doc.expected_delivery_date = data.get("expected_delivery_date") or None
 	doc.intake_receiver = data.get("intake_receiver")
 	doc.delivery_receiver = data.get("delivery_receiver")

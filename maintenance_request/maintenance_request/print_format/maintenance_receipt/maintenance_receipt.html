@@ -1,0 +1,373 @@
+<style>
+	@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+	.mr-receipt {
+		font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		color: #0f172a;
+		padding: 15px 20px;
+		direction: rtl;
+		text-align: right;
+		font-size: 12px;
+		line-height: 1.5;
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	.mr-receipt * {
+		box-sizing: border-box;
+	}
+
+	.mr-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-bottom: 2px solid #0f172a;
+		padding-bottom: 12px;
+		margin-bottom: 16px;
+	}
+
+	.mr-header-right {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mr-company-title {
+		font-size: 18px;
+		font-weight: 800;
+		color: #0f172a;
+		margin: 0 0 2px 0;
+	}
+
+	.mr-branch-title {
+		font-size: 12px;
+		color: #475569;
+		margin: 0;
+	}
+
+	.mr-receipt-title-box {
+		text-align: center;
+	}
+
+	.mr-receipt-title {
+		font-size: 16px;
+		font-weight: 800;
+		color: #0f172a;
+		background: #f1f5f9;
+		border: 1px solid #cbd5e1;
+		padding: 4px 14px;
+		border-radius: 6px;
+		display: inline-block;
+		margin-bottom: 4px;
+	}
+
+	.mr-code {
+		font-family: monospace;
+		font-size: 13px;
+		font-weight: 700;
+		color: #0f172a;
+		direction: ltr;
+	}
+
+	.mr-meta-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 8px;
+		background: #f8fafc;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		padding: 8px 12px;
+		margin-bottom: 14px;
+	}
+
+	.mr-meta-item {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mr-meta-label {
+		font-size: 10.5px;
+		color: #64748b;
+		font-weight: 600;
+		margin-bottom: 2px;
+	}
+
+	.mr-meta-value {
+		font-size: 12px;
+		font-weight: 700;
+		color: #0f172a;
+	}
+
+	.mr-meta-value.highlight {
+		color: #0f172a;
+		direction: ltr;
+		text-align: right;
+	}
+
+	.mr-section-title {
+		font-size: 12.5px;
+		font-weight: 700;
+		color: #0f172a;
+		margin: 12px 0 6px 0;
+		padding-bottom: 3px;
+		border-bottom: 1px solid #e2e8f0;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.mr-info-table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 12px;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.mr-info-table th {
+		background: #f1f5f9;
+		color: #334155;
+		font-weight: 700;
+		padding: 6px 10px;
+		border: 1px solid #cbd5e1;
+		font-size: 11.5px;
+		width: 20%;
+	}
+
+	.mr-info-table td {
+		padding: 6px 10px;
+		border: 1px solid #e2e8f0;
+		font-size: 12px;
+		color: #0f172a;
+	}
+
+	.mr-services-table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 12px;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.mr-services-table th {
+		background: #f1f5f9;
+		color: #334155;
+		font-weight: 700;
+		padding: 6px 10px;
+		border: 1px solid #cbd5e1;
+		font-size: 11.5px;
+		text-align: right;
+	}
+
+	.mr-services-table td {
+		padding: 5px 10px;
+		border: 1px solid #e2e8f0;
+		font-size: 11.5px;
+	}
+
+	.mr-financial-summary {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+		background: #f8fafc;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		padding: 8px 12px;
+		margin-bottom: 16px;
+		text-align: center;
+	}
+
+	.mr-fin-item {
+		padding: 4px 6px;
+	}
+
+	.mr-fin-label {
+		font-size: 10.5px;
+		color: #64748b;
+		font-weight: 600;
+		display: block;
+		margin-bottom: 2px;
+	}
+
+	.mr-fin-val {
+		font-size: 14px;
+		font-weight: 800;
+		color: #0f172a;
+		direction: ltr;
+	}
+
+	.mr-terms-box {
+		border: 1px dashed #cbd5e1;
+		border-radius: 6px;
+		padding: 8px 12px;
+		font-size: 10.5px;
+		color: #64748b;
+		line-height: 1.6;
+		margin-bottom: 20px;
+	}
+
+	.mr-signatures {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 24px;
+		padding-top: 12px;
+	}
+
+	.mr-sig-col {
+		width: 42%;
+		text-align: center;
+	}
+
+	.mr-sig-line {
+		border-bottom: 1px dotted #94a3b8;
+		height: 35px;
+		margin-bottom: 6px;
+	}
+
+	.mr-sig-label {
+		font-size: 11px;
+		font-weight: 700;
+		color: #334155;
+	}
+</style>
+
+<div class="mr-receipt">
+	<!-- Header -->
+	<div class="mr-header">
+		<div class="mr-header-right">
+			<h1 class="mr-company-title">{{ doc.company or frappe.defaults.get_user_default("company") or "مركز الصيانة" }}</h1>
+			{% if doc.branch %}
+			<p class="mr-branch-title">الفرع: {{ doc.branch }}</p>
+			{% endif %}
+		</div>
+		<div class="mr-receipt-title-box">
+			<div class="mr-receipt-title">إيصال استلام صيانة</div>
+			<div class="mr-code">{{ doc.name }}</div>
+		</div>
+	</div>
+
+	<!-- Meta Grid with Date and Time -->
+	<div class="mr-meta-grid">
+		<div class="mr-meta-item">
+			<span class="mr-meta-label">تاريخ الاستلام</span>
+			<span class="mr-meta-value highlight">{{ doc.get_formatted("received_date") or doc.received_date }}</span>
+		</div>
+		<div class="mr-meta-item">
+			<span class="mr-meta-label">وقت الاستلام</span>
+			<span class="mr-meta-value highlight">{{ (doc.received_time|string)[:5] if doc.received_time else "-" }}</span>
+		</div>
+		<div class="mr-meta-item">
+			<span class="mr-meta-label">التسليم المتوقع</span>
+			<span class="mr-meta-value highlight">{{ doc.get_formatted("expected_delivery_date") or doc.expected_delivery_date }}</span>
+		</div>
+		<div class="mr-meta-item">
+			<span class="mr-meta-label">مستلم الجهاز</span>
+			<span class="mr-meta-value">{{ doc.intake_receiver or "-" }}</span>
+		</div>
+	</div>
+
+	<!-- Customer Info -->
+	<div class="mr-section-title">👤 بيانات العميل</div>
+	<table class="mr-info-table">
+		<tr>
+			<th>اسم العميل</th>
+			<td><strong>{{ doc.customer_name or doc.customer }}</strong></td>
+			<th>رقم الهاتف</th>
+			<td style="direction: ltr; text-align: right;"><strong>{{ doc.phone_number or "-" }}</strong></td>
+		</tr>
+		{% if doc.secondary_phone %}
+		<tr>
+			<th>هاتف بديل</th>
+			<td colspan="3" style="direction: ltr; text-align: right;">{{ doc.secondary_phone }}</td>
+		</tr>
+		{% endif %}
+	</table>
+
+	<!-- Device Info -->
+	<div class="mr-section-title">📱 بيانات الجهاز والمشكلة</div>
+	<table class="mr-info-table">
+		<tr>
+			<th>نوع الجهاز</th>
+			<td><strong>{{ doc.device_type or "-" }}</strong></td>
+			<th>العلامة والموديل</th>
+			<td>{{ (doc.brand or "") + " " + (doc.model or "") }}</td>
+		</tr>
+		<tr>
+			<th>الرقم التسلسلي (S/N)</th>
+			<td style="direction: ltr; text-align: right;">{{ doc.serial_number or "-" }}</td>
+			<th>حالة الجهاز</th>
+			<td>{{ doc.device_condition or "-" }}</td>
+		</tr>
+		<tr>
+			<th>المشكلة المبلغ عنها</th>
+			<td colspan="3"><strong>{{ doc.problem_description or "-" }}</strong></td>
+		</tr>
+	</table>
+
+	<!-- Services (if any) -->
+	{% if doc.services and doc.services|length > 0 %}
+	<div class="mr-section-title">🔧 الخدمات وقطع الغيار</div>
+	<table class="mr-services-table">
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>الخدمة / الصنف</th>
+				<th style="width: 70px; text-align: center;">الكمية</th>
+				<th style="width: 100px; text-align: left;">السعر</th>
+				<th style="width: 100px; text-align: left;">الإجمالي</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in doc.services %}
+			<tr>
+				<td>{{ loop.index }}</td>
+				<td>{{ row.service_item }}</td>
+				<td style="text-align: center;">{{ row.qty }}</td>
+				<td style="text-align: left; direction: ltr;">{{ frappe.utils.fmt_money(row.rate) }} SAR</td>
+				<td style="text-align: left; direction: ltr;"><strong>{{ frappe.utils.fmt_money(row.amount) }} SAR</strong></td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% endif %}
+
+	<!-- Financials -->
+	<div class="mr-section-title">💳 المبالغ والمالية</div>
+	<div class="mr-financial-summary">
+		<div class="mr-fin-item">
+			<span class="mr-fin-label">التكلفة التقديرية / الإجمالية</span>
+			<span class="mr-fin-val">{{ frappe.utils.fmt_money(doc.total_amount if doc.total_amount and doc.total_amount > 0 else doc.estimated_cost) }} SAR</span>
+		</div>
+		<div class="mr-fin-item">
+			<span class="mr-fin-label">الدفعة المقدمة (المدفوع)</span>
+			<span class="mr-fin-val" style="color: #047857;">{{ frappe.utils.fmt_money(doc.advance_paid or 0) }} SAR</span>
+		</div>
+		<div class="mr-fin-item">
+			<span class="mr-fin-label">المتبقي عند الاستلام</span>
+			<span class="mr-fin-val" style="color: #b91c1c;">{{ frappe.utils.fmt_money(doc.outstanding_amount or ((doc.total_amount if doc.total_amount and doc.total_amount > 0 else doc.estimated_cost or 0) - (doc.advance_paid or 0))) }} SAR</span>
+		</div>
+	</div>
+
+	<!-- Terms -->
+	<div class="mr-terms-box">
+		<strong>شروط الاستلام والإصلاح:</strong>
+		<br>• يرجى إبراز هذا الإيصال أو رقمه عند استلام الجهاز بعد إتمام عملية الصيانة.
+		<br>• المؤسسة غير مسؤولة عن فقدان البيانات الشخصية في الجهاز؛ يرجى أخذ نسخة احتياطية مسبقاً.
+		<br>• الأجهزة المتروكة لأكثر من 30 يوماً من تاريخ إشعار الجاهزية تخلي المؤسسة مسؤوليتها عنها.
+	</div>
+
+	<!-- Signatures -->
+	<div class="mr-signatures">
+		<div class="mr-sig-col">
+			<div class="mr-sig-label">مستلم الجهاز (الفرع)</div>
+			<div class="mr-sig-line"></div>
+			<div style="font-size: 10.5px; color: #64748b;">{{ doc.intake_receiver or frappe.session.user_fullname }}</div>
+		</div>
+		<div class="mr-sig-col">
+			<div class="mr-sig-label">توقيع العميل بالموافقة والاستلام</div>
+			<div class="mr-sig-line"></div>
+			<div style="font-size: 10.5px; color: #64748b;">{{ doc.customer_name or doc.customer }}</div>
+		</div>
+	</div>
+</div>
