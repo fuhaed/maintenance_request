@@ -842,122 +842,7 @@ function code39_svg(value) {
 
 function print_device_label(data) {
 	if (!data || !data.name) return;
-
-	var barcode_value = get_request_barcode_value(data.name);
-	var phone = data.phone_number || '';
-	var branch = data.branch || '';
-	var device = data.device_type || '';
-	var brand = data.brand || '';
-	var device_text = brand ? brand + ' ' + device : device;
-
-	var label_html = `
-		<!DOCTYPE html>
-		<html dir="rtl">
-		<head>
-			<meta charset="UTF-8">
-			<title>${esc(__('Device Label'))} ${esc(data.name)}</title>
-			<style>
-				@page { size: 50mm 25mm; margin: 0; }
-				* { box-sizing: border-box; }
-				html, body {
-					width: 50mm;
-					height: 25mm;
-					margin: 0;
-					padding: 0;
-					background: #fff;
-					color: #111;
-					font-family: Arial, Tahoma, sans-serif;
-				}
-				.label {
-					width: 50mm;
-					height: 25mm;
-					padding: 1.8mm 2.4mm 1.6mm;
-					overflow: hidden;
-					display: grid;
-					grid-template-rows: 10.5mm 5mm 5.5mm;
-					row-gap: 0.6mm;
-				}
-				.barcode-wrap {
-					direction: ltr;
-					width: 100%;
-					height: 10.5mm;
-					display: flex;
-					justify-content: center;
-					align-items: stretch;
-				}
-				.label-barcode {
-					width: 42mm;
-					height: 9.8mm;
-					fill: #111;
-				}
-				.mid-row,
-				.bottom-row {
-					display: grid;
-					grid-template-columns: 1fr 1fr;
-					align-items: center;
-					column-gap: 2mm;
-					font-weight: 700;
-					line-height: 1;
-				}
-				.phone {
-					direction: ltr;
-					text-align: left;
-					font-size: 11pt;
-					letter-spacing: 0.2px;
-				}
-				.device {
-					text-align: right;
-					font-size: 8pt;
-					white-space: nowrap;
-					overflow: hidden;
-					text-overflow: ellipsis;
-				}
-				.branch {
-					justify-self: start;
-					border: 0.35mm solid #111;
-					padding: 0.8mm 2mm;
-					font-size: 8pt;
-					line-height: 1;
-					max-width: 25mm;
-					white-space: nowrap;
-					overflow: hidden;
-					text-overflow: ellipsis;
-				}
-				.request-code {
-					direction: ltr;
-					text-align: right;
-					font-size: 9pt;
-					font-weight: 700;
-				}
-			</style>
-		</head>
-		<body>
-			<div class="label">
-				<div class="barcode-wrap">${code39_svg(barcode_value)}</div>
-				<div class="mid-row">
-					<div class="phone">${esc(phone)}</div>
-					<div class="device">${esc(device_text)}</div>
-				</div>
-				<div class="bottom-row">
-					<div class="branch">${esc(branch)}</div>
-					<div class="request-code">${esc(barcode_value)}</div>
-				</div>
-			</div>
-		</body>
-		</html>
-	`;
-
-	var print_window = window.open('', '_blank');
-	if (print_window) {
-		print_window.document.write(label_html);
-		print_window.document.close();
-		print_window.focus();
-		setTimeout(function() {
-			print_window.print();
-		}, 250);
-	} else {
-		frappe.msgprint(__('Please allow popups for this site to print the label'));
-	}
+	print_thermal_sticker(data.name);
 }
 
 function fmt_number(v) {
@@ -3085,6 +2970,13 @@ function render_and_print_thermal_label(d) {
 		return;
 	}
 
+	var is_same_cust_phone = !d.customer_name || !d.phone || d.customer_name.trim() === d.phone.trim();
+	var cust_html = is_same_cust_phone ?
+		`<span class="cust-name">${esc(d.customer_name || d.phone || '')}</span>` :
+		`<span class="cust-name">${esc(d.customer_name)}</span><span class="cust-phone">${esc(d.phone)}</span>`;
+
+	var company_text = esc(d.company || 'Maintenance') + (d.branch ? ' | ' + esc(d.branch) : '');
+
 	var html = `
 		<!DOCTYPE html>
 		<html dir="rtl">
@@ -3099,15 +2991,15 @@ function render_and_print_thermal_label(d) {
 					height: 25mm;
 					background: #fff;
 					color: #000;
-					font-family: Arial, Tahoma, sans-serif;
-					font-size: 7.5pt;
+					font-family: Arial, Tahoma, -apple-system, sans-serif;
+					font-size: 7pt;
 					line-height: 1.15;
 					overflow: hidden;
 				}
 				.sticker {
 					width: 50mm;
 					height: 25mm;
-					padding: 1.2mm 2mm 0.8mm;
+					padding: 0.9mm 1.8mm 0.6mm;
 					display: flex;
 					flex-direction: column;
 					justify-content: space-between;
@@ -3117,16 +3009,29 @@ function render_and_print_thermal_label(d) {
 					display: flex;
 					justify-content: space-between;
 					align-items: center;
-					border-bottom: 0.35mm solid #000;
-					padding-bottom: 0.5mm;
+					border-bottom: 0.3mm solid #000;
+					padding-bottom: 0.3mm;
 				}
-				.company-name { font-weight: 800; font-size: 7.5pt; max-width: 30mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-				.rec-date { font-size: 7pt; font-family: monospace; direction: ltr; font-weight: 600; }
+				.company-name {
+					font-weight: 700;
+					font-size: 6.5pt;
+					max-width: 32mm;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+				}
+				.rec-date {
+					font-size: 6pt;
+					font-family: monospace;
+					direction: ltr;
+					font-weight: 600;
+					white-space: nowrap;
+				}
 				.main-info {
 					display: flex;
 					flex-direction: column;
-					gap: 0.4mm;
-					margin: 0.4mm 0;
+					gap: 0.3mm;
+					margin: 0.2mm 0;
 				}
 				.cust-row {
 					display: flex;
@@ -3134,32 +3039,51 @@ function render_and_print_thermal_label(d) {
 					align-items: center;
 					font-weight: 700;
 				}
-				.cust-name { font-size: 8pt; font-weight: 800; max-width: 27mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-				.cust-phone { font-size: 8pt; font-weight: 800; font-family: monospace; direction: ltr; }
-				.device-row {
+				.cust-name {
 					font-size: 7.5pt;
+					font-weight: 800;
+					max-width: 28mm;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+				}
+				.cust-phone {
+					font-size: 7.5pt;
+					font-weight: 800;
+					font-family: monospace;
+					direction: ltr;
+					white-space: nowrap;
+				}
+				.device-row {
+					font-size: 7pt;
 					font-weight: 700;
 					white-space: nowrap;
 					overflow: hidden;
 					text-overflow: ellipsis;
 					color: #111;
 				}
+				.device-row .sn {
+					font-size: 6pt;
+					font-weight: 600;
+					color: #333;
+					margin-right: 3px;
+				}
 				.barcode-container {
 					display: flex;
 					flex-direction: column;
 					align-items: center;
 					justify-content: center;
-					padding-top: 0.4mm;
-					border-top: 0.35mm solid #000;
+					padding-top: 0.3mm;
+					border-top: 0.3mm solid #000;
 				}
 				.label-barcode {
-					width: 44mm;
-					height: 6.8mm;
+					width: 40mm;
+					height: 4.2mm;
 					display: block;
 					fill: #000;
 				}
 				.req-code {
-					font-size: 7.5pt;
+					font-size: 6.8pt;
 					font-weight: 800;
 					font-family: monospace;
 					letter-spacing: 0.5px;
@@ -3173,15 +3097,14 @@ function render_and_print_thermal_label(d) {
 		<body>
 			<div class="sticker">
 				<div class="header-row">
-					<span class="company-name">${esc(d.company || 'Maintenance')}</span>
+					<span class="company-name">${company_text}</span>
 					<span class="rec-date">${esc(d.received_date)}${d.received_time ? ' ' + esc(d.received_time.substring(0,5)) : ''}</span>
 				</div>
 				<div class="main-info">
 					<div class="cust-row">
-						<span class="cust-name">${esc(d.customer_name)}</span>
-						<span class="cust-phone">${esc(d.phone)}</span>
+						${cust_html}
 					</div>
-					<div class="device-row">📱 ${esc(d.device)}</div>
+					<div class="device-row">📱 ${esc(d.device)}${d.serial_number ? ' <span class="sn">S/N: ' + esc(d.serial_number) + '</span>' : ''}</div>
 				</div>
 				<div class="barcode-container">
 					${barcode_svg}
