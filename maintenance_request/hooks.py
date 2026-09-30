@@ -7,3 +7,6 @@ app_license = "mit"
 
 # Includes in <head>
 app_include_css = "/assets/maintenance_request/css/maintenance_request.css"
+
+# Hooks
+after_migrate = "maintenance_request.setup.after_migrate"
