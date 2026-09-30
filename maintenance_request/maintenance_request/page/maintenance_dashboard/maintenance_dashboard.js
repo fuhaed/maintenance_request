@@ -2970,12 +2970,8 @@ function render_and_print_thermal_label(d) {
 		return;
 	}
 
-	var is_same_cust_phone = !d.customer_name || !d.phone || d.customer_name.trim() === d.phone.trim();
-	var cust_html = is_same_cust_phone ?
-		`<span class="cust-name">${esc(d.customer_name || d.phone || '')}</span>` :
-		`<span class="cust-name">${esc(d.customer_name)}</span><span class="cust-phone">${esc(d.phone)}</span>`;
-
-	var company_text = esc(d.company || 'Maintenance') + (d.branch ? ' | ' + esc(d.branch) : '');
+	var show_phone = d.phone && (!d.customer_name || d.customer_name.trim() !== d.phone.trim());
+	var company_text = esc(d.company || 'Maintenance') + (d.branch ? ' - ' + esc(d.branch) : '');
 
 	var html = `
 		<!DOCTYPE html>
@@ -2993,29 +2989,34 @@ function render_and_print_thermal_label(d) {
 					color: #000;
 					font-family: Arial, Tahoma, -apple-system, sans-serif;
 					font-size: 7pt;
-					line-height: 1.15;
+					line-height: 1;
 					overflow: hidden;
 				}
 				.sticker {
 					width: 50mm;
 					height: 25mm;
-					padding: 0.9mm 1.8mm 0.6mm;
+					padding: 0.5mm 1.5mm 0.3mm;
 					display: flex;
 					flex-direction: column;
-					justify-content: space-between;
+					justify-content: flex-start;
+					gap: 0.35mm;
 					box-sizing: border-box;
 				}
-				.header-row {
+				.row {
 					display: flex;
 					justify-content: space-between;
 					align-items: center;
-					border-bottom: 0.3mm solid #000;
-					padding-bottom: 0.3mm;
+					width: 100%;
+					line-height: 1;
+					margin: 0;
+					padding: 0;
+				}
+				.header-row {
+					font-size: 6.5pt;
 				}
 				.company-name {
 					font-weight: 700;
-					font-size: 6.5pt;
-					max-width: 32mm;
+					max-width: 33mm;
 					overflow: hidden;
 					text-overflow: ellipsis;
 					white-space: nowrap;
@@ -3027,88 +3028,100 @@ function render_and_print_thermal_label(d) {
 					font-weight: 600;
 					white-space: nowrap;
 				}
-				.main-info {
-					display: flex;
-					flex-direction: column;
-					gap: 0.3mm;
-					margin: 0.2mm 0;
+				.divider {
+					border-bottom: 0.25mm solid #000;
+					margin: 0.15mm 0;
+					width: 100%;
 				}
 				.cust-row {
-					display: flex;
-					justify-content: space-between;
-					align-items: center;
-					font-weight: 700;
-				}
-				.cust-name {
 					font-size: 7.5pt;
 					font-weight: 800;
-					max-width: 28mm;
+				}
+				.cust-name {
+					max-width: 29mm;
 					overflow: hidden;
 					text-overflow: ellipsis;
 					white-space: nowrap;
 				}
 				.cust-phone {
-					font-size: 7.5pt;
-					font-weight: 800;
 					font-family: monospace;
 					direction: ltr;
 					white-space: nowrap;
 				}
-				.device-row {
+				.dev-row {
 					font-size: 7pt;
 					font-weight: 700;
-					white-space: nowrap;
+				}
+				.dev-name {
+					max-width: 28mm;
 					overflow: hidden;
 					text-overflow: ellipsis;
-					color: #111;
+					white-space: nowrap;
 				}
-				.device-row .sn {
+				.dev-sn {
 					font-size: 6pt;
-					font-weight: 600;
-					color: #333;
-					margin-right: 3px;
+					font-family: monospace;
+					direction: ltr;
+					color: #111;
+					max-width: 18mm;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
 				}
-				.barcode-container {
+				.barcode-wrap {
 					display: flex;
 					flex-direction: column;
 					align-items: center;
 					justify-content: center;
-					padding-top: 0.3mm;
-					border-top: 0.3mm solid #000;
+					width: 100%;
+					margin-top: 0.2mm;
 				}
 				.label-barcode {
-					width: 40mm;
-					height: 4.2mm;
+					width: 36mm;
+					height: 3.8mm;
 					display: block;
 					fill: #000;
 				}
 				.req-code {
-					font-size: 6.8pt;
+					font-size: 6.5pt;
 					font-weight: 800;
 					font-family: monospace;
 					letter-spacing: 0.5px;
 					direction: ltr;
 					text-align: center;
 					line-height: 1;
-					margin-top: 0.2mm;
+					margin-top: 0.1mm;
 				}
 			</style>
 		</head>
 		<body>
 			<div class="sticker">
-				<div class="header-row">
+				<!-- 1. Header -->
+				<div class="row header-row">
 					<span class="company-name">${company_text}</span>
-					<span class="rec-date">${esc(d.received_date)}${d.received_time ? ' ' + esc(d.received_time.substring(0,5)) : ''}</span>
+					<span class="rec-date">${esc(d.received_date)}</span>
 				</div>
-				<div class="main-info">
-					<div class="cust-row">
-						${cust_html}
-					</div>
-					<div class="device-row">📱 ${esc(d.device)}${d.serial_number ? ' <span class="sn">S/N: ' + esc(d.serial_number) + '</span>' : ''}</div>
+
+				<div class="divider"></div>
+
+				<!-- 2. Customer & Phone -->
+				<div class="row cust-row">
+					<span class="cust-name">${esc(d.customer_name || d.phone || '')}</span>
+					${show_phone ? `<span class="cust-phone">${esc(d.phone)}</span>` : ''}
 				</div>
-				<div class="barcode-container">
+
+				<!-- 3. Device & Serial -->
+				<div class="row dev-row">
+					<span class="dev-name">${esc(d.device || d.device_type || '')}</span>
+					${d.serial_number ? `<span class="dev-sn">${esc(d.serial_number)}</span>` : ''}
+				</div>
+
+				<div class="divider"></div>
+
+				<!-- 4. Barcode & Request ID -->
+				<div class="barcode-wrap">
 					${barcode_svg}
-					<span class="req-code">${esc(d.name)}</span>
+					<div class="req-code">${esc(d.name)}</div>
 				</div>
 			</div>
 			<script>
