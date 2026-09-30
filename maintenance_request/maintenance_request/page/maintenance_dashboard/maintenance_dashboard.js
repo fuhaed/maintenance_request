@@ -2989,17 +2989,16 @@ function render_and_print_thermal_label(d) {
 					color: #000;
 					font-family: Arial, Tahoma, -apple-system, sans-serif;
 					font-size: 7pt;
-					line-height: 1;
+					line-height: 1.15;
 					overflow: hidden;
 				}
 				.sticker {
 					width: 50mm;
 					height: 25mm;
-					padding: 0.5mm 1.5mm 0.3mm;
+					padding: 1.0mm 2.0mm 0.8mm;
 					display: flex;
 					flex-direction: column;
-					justify-content: flex-start;
-					gap: 0.35mm;
+					justify-content: space-between;
 					box-sizing: border-box;
 				}
 				.row {
@@ -3007,12 +3006,12 @@ function render_and_print_thermal_label(d) {
 					justify-content: space-between;
 					align-items: center;
 					width: 100%;
-					line-height: 1;
-					margin: 0;
-					padding: 0;
+					line-height: 1.15;
 				}
 				.header-row {
 					font-size: 6.5pt;
+					border-bottom: 0.3mm solid #000;
+					padding-bottom: 0.4mm;
 				}
 				.company-name {
 					font-weight: 700;
@@ -3022,28 +3021,31 @@ function render_and_print_thermal_label(d) {
 					white-space: nowrap;
 				}
 				.rec-date {
-					font-size: 6pt;
+					font-size: 6.2pt;
 					font-family: monospace;
 					direction: ltr;
 					font-weight: 600;
 					white-space: nowrap;
 				}
-				.divider {
-					border-bottom: 0.25mm solid #000;
-					margin: 0.15mm 0;
-					width: 100%;
+				.middle-info {
+					display: flex;
+					flex-direction: column;
+					gap: 0.4mm;
+					margin: 0.3mm 0;
 				}
 				.cust-row {
-					font-size: 7.5pt;
+					font-size: 8pt;
 					font-weight: 800;
 				}
 				.cust-name {
-					max-width: 29mm;
+					max-width: 28mm;
 					overflow: hidden;
 					text-overflow: ellipsis;
 					white-space: nowrap;
 				}
 				.cust-phone {
+					font-size: 7.5pt;
+					font-weight: 800;
 					font-family: monospace;
 					direction: ltr;
 					white-space: nowrap;
@@ -3051,22 +3053,10 @@ function render_and_print_thermal_label(d) {
 				.dev-row {
 					font-size: 7pt;
 					font-weight: 700;
-				}
-				.dev-name {
-					max-width: 28mm;
+					white-space: nowrap;
 					overflow: hidden;
 					text-overflow: ellipsis;
-					white-space: nowrap;
-				}
-				.dev-sn {
-					font-size: 6pt;
-					font-family: monospace;
-					direction: ltr;
-					color: #111;
-					max-width: 18mm;
-					overflow: hidden;
-					text-overflow: ellipsis;
-					white-space: nowrap;
+					color: #000;
 				}
 				.barcode-wrap {
 					display: flex;
@@ -3074,23 +3064,24 @@ function render_and_print_thermal_label(d) {
 					align-items: center;
 					justify-content: center;
 					width: 100%;
-					margin-top: 0.2mm;
+					border-top: 0.3mm solid #000;
+					padding-top: 0.4mm;
 				}
 				.label-barcode {
-					width: 36mm;
-					height: 3.8mm;
+					width: 42mm;
+					height: 5.2mm;
 					display: block;
 					fill: #000;
 				}
 				.req-code {
-					font-size: 6.5pt;
+					font-size: 7pt;
 					font-weight: 800;
 					font-family: monospace;
 					letter-spacing: 0.5px;
 					direction: ltr;
 					text-align: center;
 					line-height: 1;
-					margin-top: 0.1mm;
+					margin-top: 0.2mm;
 				}
 			</style>
 		</head>
@@ -3099,26 +3090,19 @@ function render_and_print_thermal_label(d) {
 				<!-- 1. Header -->
 				<div class="row header-row">
 					<span class="company-name">${company_text}</span>
-					<span class="rec-date">${esc(d.received_date)}</span>
+					<span class="rec-date">${esc(d.received_date)}${d.received_time ? ' ' + esc(d.received_time.substring(0,5)) : ''}</span>
 				</div>
 
-				<div class="divider"></div>
-
-				<!-- 2. Customer & Phone -->
-				<div class="row cust-row">
-					<span class="cust-name">${esc(d.customer_name || d.phone || '')}</span>
-					${show_phone ? `<span class="cust-phone">${esc(d.phone)}</span>` : ''}
+				<!-- 2. Middle (Customer & Device) -->
+				<div class="middle-info">
+					<div class="row cust-row">
+						<span class="cust-name">${esc(d.customer_name || d.phone || '')}</span>
+						${show_phone ? `<span class="cust-phone">${esc(d.phone)}</span>` : ''}
+					</div>
+					<div class="dev-row">${esc(d.device || d.device_type || '')}${d.serial_number ? ' | S/N: ' + esc(d.serial_number) : ''}</div>
 				</div>
 
-				<!-- 3. Device & Serial -->
-				<div class="row dev-row">
-					<span class="dev-name">${esc(d.device || d.device_type || '')}</span>
-					${d.serial_number ? `<span class="dev-sn">${esc(d.serial_number)}</span>` : ''}
-				</div>
-
-				<div class="divider"></div>
-
-				<!-- 4. Barcode & Request ID -->
+				<!-- 3. Barcode & Request ID -->
 				<div class="barcode-wrap">
 					${barcode_svg}
 					<div class="req-code">${esc(d.name)}</div>
